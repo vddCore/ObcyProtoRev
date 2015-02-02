@@ -1,5 +1,4 @@
 ﻿using WebSocketSharp;
-using ObcyProtoRev.Protocol.SockJs;
 
 namespace ObcyProtoRev.Protocol
 {
