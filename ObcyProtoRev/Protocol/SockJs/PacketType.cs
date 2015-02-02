@@ -3,10 +3,10 @@
     public enum PacketType
     {
         ConnectionOpen,
-        SocketMessage,
-        BinaryData,
         ConnectionClose,
         SocketHeartbeat,
+        SocketMessage,
+        BinaryData,
         Invalid
     }
 }
