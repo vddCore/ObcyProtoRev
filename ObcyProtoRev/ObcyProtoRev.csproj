@@ -60,6 +60,17 @@
     <Compile Include="Protocol\Client\Identity\PersonInfo.cs" />
     <Compile Include="Protocol\Client\UserAgent.cs" />
     <Compile Include="Protocol\Connection.cs" />
+    <Compile Include="Protocol\Server\Packets\ConnectionAcceptedPacket.cs" />
+    <Compile Include="Protocol\Server\Packets\ConversationEndedPacket.cs" />
+    <Compile Include="Protocol\Server\Packets\MessageReceivedPacket.cs" />
+    <Compile Include="Protocol\Server\Packets\OnlinePeopleCountPacket.cs" />
+    <Compile Include="Protocol\Server\Packets\PingPacket.cs" />
+    <Compile Include="Protocol\Server\Packets\RandomTopicReceivedPacket.cs" />
+    <Compile Include="Protocol\Server\Packets\ReconnectionSuccessPacket.cs" />
+    <Compile Include="Protocol\Server\Packets\ServiceMessageReceived.cs" />
+    <Compile Include="Protocol\Server\Packets\StrangerDisconnectedPacket.cs" />
+    <Compile Include="Protocol\Server\Packets\StrangerFoundPacket.cs" />
+    <Compile Include="Protocol\Server\Packets\StrangerChatstatePacket.cs" />
     <Compile Include="Protocol\SockJs\Decoder.cs" />
     <Compile Include="Protocol\SockJs\DecoderExtensions.cs" />
     <Compile Include="Protocol\SockJs\Packet.cs" />
@@ -71,6 +82,7 @@
   <ItemGroup>
     <Compile Include="Protocol\Client\Packets\ReportStrangerPacket.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
