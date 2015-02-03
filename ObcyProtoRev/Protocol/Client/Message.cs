@@ -8,7 +8,7 @@
         public int? ClientID { get; private set; }
         public int? PostID { get; private set; }
 
-        public Message(MessageType type, string body, int clientId, int postId)
+        public Message(MessageType type, string body, int? clientId, int? postId)
         {
             Type = type;
 
