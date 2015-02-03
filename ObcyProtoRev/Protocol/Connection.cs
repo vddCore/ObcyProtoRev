@@ -12,31 +12,49 @@ namespace ObcyProtoRev.Protocol
 {
     public class Connection
     {
+        #region Private fields
         private WebSocket WebSocket { get; set; }
         private TargetWebsocketAddress WebsocketAddress { get; set; }
+        #endregion
 
-
+        #region Public fields
         public bool IsReady { get; private set; }
         public bool IsOpen { get; private set; }
 
         public string CurrentContactUID { get; private set; }
+        #endregion
 
-        public delegate void ConnectionAcceptedEventHandler(object sender, string connectionId);
-        public delegate void ConversationEndedEventHandler(object sender, DisconnectInfo disconnectInfo);
-        public delegate void MessageEventHandler(object sender, Message message);        
-        public delegate void OnlinePeopleCountChangedEventHandler(object sender, int count);
-        public delegate void PingReceivedEventHandler(object sender, DateTime pingTime);
-        public delegate void StrangerChatstateChangedEventHandler(object sender, bool typing);
-        public delegate void StrangerFoundEventHandler(object sender, ContactInfo contactInfo);
+        #region Delegates
+        public delegate void BooleanEventHandler(object sender, bool value);
+        public delegate void ContactInfoEventHandler(object sender, ContactInfo contactInfo);
+        public delegate void ConversationEndEventHandler(object sender, DisconnectInfo disconnectInfo);
+        public delegate void DateTimeEventHandler(object sender, DateTime dateTime);
+        public delegate void ErrorEventHandler(object sender, Exception e);
+        public delegate void IntegerEventHandler(object sender, int count);
+        public delegate void MessageEventHandler(object sender, Message message);
+        public delegate void ObjectEventHandler(object sender, EventArgs e);
+        public delegate void StringEventHandler(object sender, string value);
+        #endregion
 
-        public event ConnectionAcceptedEventHandler ConnectionAccepted;
-        public event ConversationEndedEventHandler ConversationEnded;
+        #region Event handlers
+        public event StringEventHandler ConnectionAccepted;
+        public event ObjectEventHandler ConnectionAcknowledeged;
+        public event ConversationEndEventHandler ConversationEnded;
+        public event DateTimeEventHandler HeartbeatReceived;
+        public event StringEventHandler JsonRead;
+        public event StringEventHandler JsonWritten;
         public event MessageEventHandler MessageReceived;
-        public event OnlinePeopleCountChangedEventHandler OnlinePeopleCountChanged;
-        public event PingReceivedEventHandler PingReceived;
-        public event StrangerChatstateChangedEventHandler StrangerChatstateChanged;
-        public event StrangerFoundEventHandler StrangerFound;
+        public event IntegerEventHandler OnlinePeopleCountChanged;
+        public event DateTimeEventHandler PingReceived;
+        public event ObjectEventHandler ServerClosedConnection;
+        public event StringEventHandler SocketClosed;
+        public event ErrorEventHandler SocketError;
+        public event ObjectEventHandler SocketOpened;
+        public event BooleanEventHandler StrangerChatstateChanged;
+        public event ContactInfoEventHandler StrangerFound;
+        #endregion
 
+        #region Constructor
         public Connection()
         {
             CreateWebsocket();
@@ -45,17 +63,34 @@ namespace ObcyProtoRev.Protocol
 
             IsReady = true;
         }
+        #endregion
+
+        public void Close()
+        {
+            if (IsReady && IsOpen)
+                WebSocket.Close();
+        }
+
+        public void Open()
+        {
+            if (IsReady && !IsOpen)
+                WebSocket.Connect();
+        }
 
         public void SendPacket(Packet packet)
         {
-            if(IsReady && IsOpen)
+            if (IsReady && IsOpen)
                 WebSocket.Send(packet);
+
+            OnJsonWrite(packet);
         }
 
         public void SendPacket(string json)
         {
             if (IsReady && IsOpen)
                 WebSocket.Send(json);
+
+            OnJsonWrite(json);
         }
 
         public void SendMessage(string message)
@@ -63,7 +98,7 @@ namespace ObcyProtoRev.Protocol
             if (IsReady && IsOpen)
             {
                 SendPacket(
-                    new MessagePacket(message, CurrentContactUID)    
+                    new MessagePacket(message, CurrentContactUID)
                 );
             }
         }
@@ -117,7 +152,7 @@ namespace ObcyProtoRev.Protocol
                 {
                     OnConversationEnded(
                         new DisconnectInfo(
-                            true, 
+                            true,
                             int.Parse(packet.Data.ToString())
                         )
                     );
@@ -165,7 +200,7 @@ namespace ObcyProtoRev.Protocol
                 if (packet.Header == ServiceMessageReceivedPacket.ToString())
                 {
                     var message = new Message(MessageType.Service, packet.Data.ToString(), null, null);
-                    OnMessageReceived(message);                    
+                    OnMessageReceived(message);
                 }
 
                 if (packet.Header == StrangerChatstatePacket.ToString())
@@ -194,25 +229,25 @@ namespace ObcyProtoRev.Protocol
                             packet.Data["ckey"].ToString(),
                             packet.Data["info"],
                             bool.Parse(packet.Data["flaged"].ToString())
-                        )    
+                        )
                     );
                 }
             }
         }
 
-        private void WebsocketPacketHandlerOnSocketHeartbeatReceived(EventArgs eventArgs)
+        private void WebsocketPacketHandlerOnSocketHeartbeatReceived(DateTime heartbeatTime)
         {
-            
+
         }
 
-        private void WebsocketPacketHandlerOnConnectionClosePacketReceived(string sockJsPacket)
+        private void WebsocketPacketHandlerOnConnectionClosePacketReceived(EventArgs e)
         {
-            
+            OnServerClosedConnection();
         }
 
-        private void WebsocketPacketHandler_ConnectionOpenPacketReceived(string sockJsPacket)
+        private void WebsocketPacketHandler_ConnectionOpenPacketReceived(EventArgs e)
         {
-            
+            OnConnectionAcknowledeged();
         }
         #endregion
 
@@ -225,19 +260,22 @@ namespace ObcyProtoRev.Protocol
         private void WebSocket_OnMessage(object sender, MessageEventArgs messageEventArgs)
         {
             WebsocketPacketHandler.HandlePacket(messageEventArgs.Data);
+            OnJsonRead(messageEventArgs.Data);
         }
 
         private void WebSocket_OnError(object sender, ErrorEventArgs e)
         {
-            
+            OnSocketError(e.Exception);
         }
 
         private void WebSocket_OnClose(object sender, CloseEventArgs e)
         {
             IsOpen = false;
+            OnSocketClosed(e.Reason);
         }
         #endregion
 
+        #region Event invokers
         protected virtual void OnConnectionAccepted(string connectionid)
         {
             var handler = ConnectionAccepted;
@@ -279,5 +317,54 @@ namespace ObcyProtoRev.Protocol
             var handler = PingReceived;
             if (handler != null) handler(this, pingtime);
         }
+
+        protected virtual void OnConnectionAcknowledeged()
+        {
+            var handler = ConnectionAcknowledeged;
+            if (handler != null) handler(this, EventArgs.Empty);
+        }
+
+        protected virtual void OnJsonRead(string value)
+        {
+            var handler = JsonRead;
+            if (handler != null) handler(this, value);
+        }
+
+        protected virtual void OnJsonWrite(string value)
+        {
+            var handler = JsonWritten;
+            if (handler != null) handler(this, value);
+        }
+
+        protected virtual void OnServerClosedConnection()
+        {
+            var handler = ServerClosedConnection;
+            if (handler != null) handler(this, EventArgs.Empty);
+        }
+
+        protected virtual void OnHeartbeatReceived(DateTime datetime)
+        {
+            var handler = HeartbeatReceived;
+            if (handler != null) handler(this, datetime);
+        }
+
+        protected virtual void OnSocketClosed(string reason)
+        {
+            var handler = SocketClosed;
+            if (handler != null) handler(this, reason);
+        }
+
+        protected virtual void OnSocketError(Exception e)
+        {
+            var handler = SocketError;
+            if (handler != null) handler(this, e);
+        }
+
+        protected virtual void OnSocketOpened()
+        {
+            var handler = SocketOpened;
+            if (handler != null) handler(this, EventArgs.Empty);
+        }
+        #endregion
     }
 }
