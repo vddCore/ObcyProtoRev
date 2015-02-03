@@ -63,9 +63,9 @@ namespace ObcyProtoRev.Protocol
         #region Constructor
         public Connection()
         {
+            RenewConnectionAddress();
             CreateWebsocket();
             RegisterPacketHandlerEvents();
-            RenewConnectionAddress();
 
             KeepAlive = true;
             IsReady = true;
@@ -140,7 +140,7 @@ namespace ObcyProtoRev.Protocol
 
         public void SearchForStranger(Location location)
         {
-            if (IsStrangerConnected)
+            if (!IsStrangerConnected)
             {
                 var info = new PersonInfo(0, location);
 
@@ -201,10 +201,13 @@ namespace ObcyProtoRev.Protocol
 
         private void RenewConnectionAddress()
         {
-            if (WebSocket.IsAlive)
+            if (WebSocket != null)
             {
-                WebSocket.Close();
-                IsReady = false;
+                if (WebSocket.IsAlive)
+                {
+                    WebSocket.Close();
+                    IsReady = false;
+                }
             }
 
             WebsocketAddress = new TargetWebsocketAddress();
@@ -233,12 +236,12 @@ namespace ObcyProtoRev.Protocol
                 }
 
                 if (packet.Header == MessageReceivedPacket.ToString())
-                {
+                {                   
                     var message = new Message(
                         MessageType.Instant,
                         packet.Data["msg"].ToString(),
                         int.Parse(packet.Data["cid"].ToString()),
-                        int.Parse(packet.Data["post_id"].ToString())
+                        int.Parse(packet.AdditionalFields["post_id"].ToString())
                     );
                     OnMessageReceived(message);
                 }
@@ -264,7 +267,7 @@ namespace ObcyProtoRev.Protocol
                         MessageType.Subject,
                         packet.Data["topic"].ToString(),
                         int.Parse(packet.Data["cid"].ToString()),
-                        int.Parse(packet.Data["post_id"].ToString())
+                        int.Parse(packet.AdditionalFields["post_id"].ToString())
                     );
                     OnMessageReceived(message);
                 }
@@ -359,12 +362,6 @@ namespace ObcyProtoRev.Protocol
             if (handler != null) 
                 handler(this, connectionid);
 
-            if (SendUserAgent)
-            {
-                SendPacket(
-                    new ClientInfoPacket(IsMobile, UserAgent)
-                );
-            }
         }
 
         protected virtual void OnMessageReceived(Message message)
