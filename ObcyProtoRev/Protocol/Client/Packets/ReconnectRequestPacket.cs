@@ -4,6 +4,11 @@ namespace ObcyProtoRev.Protocol.Client.Packets
 {
     class ReconnectRequestPacket : Packet
     {
-        //TODO: Not reverse-engineered yet.
+        public ReconnectRequestPacket(ReconnectInfo reconnectInfo)
+        {
+            Header = "_reconn_me";
+
+            //TODO: Stub
+        }
     }
 }
