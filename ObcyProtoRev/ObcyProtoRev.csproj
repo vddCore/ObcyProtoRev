@@ -61,6 +61,7 @@
     <Compile Include="Protocol\Client\Packets\ReconnectRequestPacket.cs" />
     <Compile Include="Protocol\Client\Packets\StrangerSearchPacket.cs" />
     <Compile Include="Protocol\Client\Identity\PersonInfo.cs" />
+    <Compile Include="Protocol\Client\ReconnectInfo.cs" />
     <Compile Include="Protocol\Client\UserAgent.cs" />
     <Compile Include="Protocol\Connection.cs" />
     <Compile Include="Protocol\Server\Packets\ConnectionAcceptedPacket.cs" />
