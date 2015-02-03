@@ -6,9 +6,16 @@ namespace ObcyProtoRev.Protocol.SockJs
 {
     static class SocketGenerator
     {
+        private static readonly Random Rng = new Random();
+
+        public static int GeneratePortNumber()
+        {
+            return Rng.Next(7000, 7010);
+        }
+
         public static string GenerateRandomSocketNumber()
         {
-            var sUid = new Random().Next(0, 999);
+            var sUid = Rng.Next(0, 999);
 
             switch (sUid.ToString().Length)
             {
