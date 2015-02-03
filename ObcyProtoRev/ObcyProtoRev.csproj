@@ -46,6 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Protocol\Client\ContactInfo.cs" />
     <Compile Include="Protocol\Client\Identity\Location.cs" />
     <Compile Include="Protocol\Client\Message.cs" />
     <Compile Include="Protocol\Client\MessageType.cs" />
@@ -68,7 +69,7 @@
     <Compile Include="Protocol\Server\Packets\PingPacket.cs" />
     <Compile Include="Protocol\Server\Packets\RandomTopicReceivedPacket.cs" />
     <Compile Include="Protocol\Server\Packets\ReconnectionSuccessPacket.cs" />
-    <Compile Include="Protocol\Server\Packets\ServiceMessageReceived.cs" />
+    <Compile Include="Protocol\Server\Packets\ServiceMessageReceivedPacket.cs" />
     <Compile Include="Protocol\Server\Packets\StrangerDisconnectedPacket.cs" />
     <Compile Include="Protocol\Server\Packets\StrangerFoundPacket.cs" />
     <Compile Include="Protocol\Server\Packets\StrangerChatstatePacket.cs" />
