@@ -76,6 +76,7 @@
     <Compile Include="Protocol\SockJs\Packet.cs" />
     <Compile Include="Protocol\SockJs\PacketType.cs" />
     <Compile Include="Protocol\SockJs\SocketGenerator.cs" />
+    <Compile Include="Protocol\SockJs\TargetWebsocketAddress.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
