@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 
 namespace ObcyProtoRev.Protocol.SockJs
 {
-    class Packet : JObject
+    public class Packet : JObject
     {
         public string Header
         {
@@ -36,6 +36,11 @@ namespace ObcyProtoRev.Protocol.SockJs
             : this(header)
         {
             Data = data;
+        }
+
+        public static implicit operator string(Packet packet)
+        {
+            return packet.ToString();
         }
 
         public override string ToString()
