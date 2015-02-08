@@ -10,12 +10,12 @@ namespace ObcyProtoRev.Protocol.SockJs
 
         public static int GeneratePortNumber()
         {
-            return Rng.Next(7000, 7010);
+            return Rng.Next(7001, 7006);
         }
 
         public static string GenerateRandomSocketNumber()
         {
-            var sUid = Rng.Next(0, 999);
+            var sUid = Rng.Next();
 
             switch (sUid.ToString().Length)
             {

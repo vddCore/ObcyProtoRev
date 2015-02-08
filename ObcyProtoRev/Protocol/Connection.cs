@@ -95,6 +95,7 @@ namespace ObcyProtoRev.Protocol
                 SendPacket(
                     new DisconnectPacket(CurrentContactUID)
                 );
+                IsStrangerConnected = false;
             }
         }
 
@@ -235,6 +236,15 @@ namespace ObcyProtoRev.Protocol
                     );
                 }
 
+                if (packet.Header == StrangerDisconnectedPacket.ToString())
+                {
+                    OnConversationEnded(new DisconnectInfo(
+                            false,
+                            int.Parse(packet.Data.ToString())
+                        )
+                    );
+                }
+
                 if (packet.Header == MessageReceivedPacket.ToString())
                 {                   
                     var message = new Message(
@@ -287,15 +297,6 @@ namespace ObcyProtoRev.Protocol
                 {
                     OnStrangerChatstateChanged(
                         bool.Parse(packet.Data.ToString())
-                    );
-                }
-
-                if (packet.Header == StrangerDisconnectedPacket.ToString())
-                {
-                    OnConversationEnded(new DisconnectInfo(
-                            false,
-                            int.Parse(packet.Data.ToString())
-                        )
                     );
                 }
 
@@ -378,22 +379,22 @@ namespace ObcyProtoRev.Protocol
 
         protected virtual void OnStrangerFound(ContactInfo contactinfo)
         {
+            IsStrangerConnected = true;
+
             var handler = StrangerFound;
 
             if (handler != null)
                 handler(this, contactinfo);
-
-            IsStrangerConnected = true;
         }
 
         protected virtual void OnConversationEnded(DisconnectInfo disconnectInfo)
         {
+            IsStrangerConnected = false;
+
             var handler = ConversationEnded;
 
             if (handler != null)
                 handler(this, disconnectInfo);
-
-            IsStrangerConnected = false;
         }
 
         protected virtual void OnStrangerChatstateChanged(bool typing)
@@ -428,12 +429,12 @@ namespace ObcyProtoRev.Protocol
 
         protected virtual void OnServerClosedConnection()
         {
+            IsOpen = false;
+
             var handler = ServerClosedConnection;
 
             if (handler != null)
                 handler(this, EventArgs.Empty);
-
-            IsOpen = false;
         }
 
         protected virtual void OnHeartbeatReceived(DateTime datetime)
@@ -444,12 +445,12 @@ namespace ObcyProtoRev.Protocol
 
         protected virtual void OnSocketClosed(string reason)
         {
+            IsOpen = false;
+
             var handler = SocketClosed;
 
             if (handler != null)
                 handler(this, reason);
-
-            IsOpen = false;
         }
 
         protected virtual void OnSocketError(Exception e)
@@ -460,12 +461,12 @@ namespace ObcyProtoRev.Protocol
 
         protected virtual void OnSocketOpened()
         {
+            IsOpen = true;
+
             var handler = SocketOpened;
 
             if (handler != null)
                 handler(this, EventArgs.Empty);
-
-            IsOpen = true;
         }
         #endregion
     }
