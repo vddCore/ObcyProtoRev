@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Timers;
+
+using ObcyProtoRev.Extensions;
 using ObcyProtoRev.Protocol.Client;
 using ObcyProtoRev.Protocol.Client.Identity;
 using ObcyProtoRev.Protocol.Client.Packets;
 using ObcyProtoRev.Protocol.Server.Packets;
 using ObcyProtoRev.Protocol.SockJs;
-
+using ObcyProtoRev.Utilities;
 using WebSocketSharp;
 
 namespace ObcyProtoRev.Protocol
@@ -26,33 +29,53 @@ namespace ObcyProtoRev.Protocol
         /// Gets or sets current generated target websocket address.
         /// </summary>
         private TargetWebsocketAddress WebsocketAddress { get; set; }
+
+        /// <summary>
+        /// Gets or sets the reconnect attempt timer.
+        /// </summary>
+        private Timer ReconnectTimer { get; set; }
+
+        /// <summary>
+        /// Gets or sets the value indicating server's ping failure count in case of severed connection.
+        /// </summary>
+        private int NoPingCounter { get; set; }
+
+        /// <summary>
+        /// Gets or sets the value describing previous stranger ID.
+        /// </summary>
+        private string PreviousContactUID { get; set; }
+
+        /// <summary>
+        /// Gets or sets the value describing last message ID.
+        /// </summary>
+        private int LastPostID { get; set; }
         #endregion
 
         #region Public fields
         /// <summary>
-        /// Gets a value indicating that socket is ready to open a connection.
+        /// Gets a value indicating current client state.
         /// </summary>
-        public bool IsReady { get; private set; }
+        public ClientState ClientState { get; private set; }
 
         /// <summary>
-        /// Gets a value indicating that connection is already open.
+        /// Gets a value indicating current connection state.
         /// </summary>
-        public bool IsOpen { get; private set; }
+        public ConnectionState ConnectionState { get; private set; }
 
         /// <summary>
-        /// Gets or sets whether a connection should report itself as mobile.
+        /// Gets a value indicating whether the current session has made a connection at least once.
+        /// </summary>
+        public bool HasEverSearchedForStranger { get; private set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether a connection should report itself as mobile.
         /// </summary>
         public bool IsMobile { get; set; }
 
         /// <summary>
-        /// Gets a value indicating that a stranger is connected.
+        /// Gets a value indicating that socket is ready to open a connection.
         /// </summary>
-        public bool IsStrangerConnected { get; private set; }
-
-        /// <summary>
-        /// Gets a value indicating that a search for a stranger is currently ongoing.
-        /// </summary>
-        public bool IsSearchingForStranger { get; private set; }
+        public bool IsReady { get; private set; }
 
         /// <summary>
         /// Gets or sets whether the connection should be kept alive automatically.
@@ -65,9 +88,19 @@ namespace ObcyProtoRev.Protocol
         public bool SendUserAgent { get; set; }
 
         /// <summary>
-        /// Gets a value indicating current stranger UID assigned by the service.
+        /// Gets a value indicating current stranger UID sent by the service.
         /// </summary>
         public string CurrentContactUID { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating your current connection UID assigned by the service.
+        /// </summary>
+        public string CurrentConnectionUID { get; private set; }
+        
+        /// <summary>
+        /// Gets a value describing the last socket opening time.
+        /// </summary>
+        public DateTime LastConnectionTime { get; private set; }
 
         /// <summary>
         /// Gets or sets an identity that should be sent on connection acknowledge.
@@ -83,7 +116,6 @@ namespace ObcyProtoRev.Protocol
         public delegate void ErrorEventHandler(object sender, Exception e);
         public delegate void IntegerEventHandler(object sender, int count);
         public delegate void MessageEventHandler(object sender, Message message);
-        public delegate void ObjectEventHandler(object sender, EventArgs e);
         public delegate void StringEventHandler(object sender, string value);
         #endregion
 
@@ -91,17 +123,22 @@ namespace ObcyProtoRev.Protocol
         /// <summary>
         /// Event that gets fired after the client receives "ConnectionAccepted" service packet.
         /// </summary>
-        public event StringEventHandler ConnectionAccepted;
+        public event EventHandler ConnectionAccepted;
 
         /// <summary>
         /// Event that gets fired after the client receives the meaningful "o" socket packet.
         /// </summary>
-        public event ObjectEventHandler ConnectionAcknowledged;
+        public event EventHandler ConnectionAcknowledged;
 
         /// <summary>
         /// Event that gets fired when a stranger disconnects or client tries to send a packet that requires an active conversation.
         /// </summary>
         public event ConversationEndEventHandler ConversationEnded;
+
+        /// <summary>
+        /// Event that gets fired when the connection is lost.
+        /// </summary>
+        public event EventHandler ConnectionLost;
 
         /// <summary>
         /// Event that gets fired when the client receives the meaningful "h" socket packet.
@@ -136,7 +173,7 @@ namespace ObcyProtoRev.Protocol
         /// <summary>
         /// Event that gets fired when client receives the meaningful "c" socket packet.
         /// </summary>
-        public event ObjectEventHandler ServerClosedConnection;
+        public event EventHandler ServerClosedConnection;
 
         /// <summary>
         /// Event that gets fired when socket gets closed.
@@ -151,7 +188,7 @@ namespace ObcyProtoRev.Protocol
         /// <summary>
         /// Event that gets fired when socket gets opened.
         /// </summary>
-        public event ObjectEventHandler SocketOpened;
+        public event EventHandler SocketOpened;
 
         /// <summary>
         /// Event that gets fired when client receives Chatstate packet, i.e. stranger is or is not typing.
@@ -170,9 +207,15 @@ namespace ObcyProtoRev.Protocol
         /// </summary>
         public Connection()
         {
+            ConnectionState = ConnectionState.Offline;
+            ClientState = ClientState.Idle;
+
             RenewConnectionAddress();
             CreateWebsocket();
             RegisterPacketHandlerEvents();
+
+            PreviousContactUID = "0";
+            HasEverSearchedForStranger = false;
 
             KeepAlive = true;
             IsReady = true;
@@ -188,7 +231,7 @@ namespace ObcyProtoRev.Protocol
         /// </summary>
         public void Close()
         {
-            if (IsReady && IsOpen)
+            if (ConnectionState == ConnectionState.Connected)
                 WebSocket.Close();
         }
 
@@ -197,7 +240,7 @@ namespace ObcyProtoRev.Protocol
         /// </summary>
         public void Open()
         {
-            if (IsReady && !IsOpen)
+            if (IsReady && ConnectionState == ConnectionState.Offline)
                 WebSocket.Connect();
         }
 
@@ -206,12 +249,12 @@ namespace ObcyProtoRev.Protocol
         /// </summary>
         public void DisconnectStranger()
         {
-            if (IsReady && IsOpen && IsStrangerConnected)
+            if (ConnectionState == ConnectionState.Connected && ClientState == ClientState.Chatting)
             {
                 SendPacket(
                     new DisconnectPacket(CurrentContactUID)
                 );
-                IsStrangerConnected = false;
+                ClientState = ClientState.Idle;
 
                 DisconnectInfo di = new DisconnectInfo(false, 0);
                 OnConversationEnded(di);
@@ -223,7 +266,7 @@ namespace ObcyProtoRev.Protocol
         /// </summary>
         public void FlagStranger()
         {
-            if (IsOpen && IsReady)
+            if (ConnectionState == ConnectionState.Connected)
             {
                 SendPacket(
                     new ReportStrangerPacket(CurrentContactUID)
@@ -236,7 +279,7 @@ namespace ObcyProtoRev.Protocol
         /// </summary>
         public void PongResponse()
         {
-            if (IsOpen && IsReady)
+            if (ConnectionState == ConnectionState.Connected)
             {
                 SendPacket(
                     new PongPacket()
@@ -250,7 +293,7 @@ namespace ObcyProtoRev.Protocol
         /// <param name="isTyping">Set to <see langword="true"/> if typing, set to <see langword="false"/> if not.</param>
         public void ReportChatstate(bool isTyping)
         {
-            if (IsReady && IsOpen && IsStrangerConnected)
+            if (ConnectionState == ConnectionState.Connected && ClientState == ClientState.Chatting)
             {
                 SendPacket(
                     new ChatstatePacket(isTyping, CurrentContactUID)
@@ -263,7 +306,7 @@ namespace ObcyProtoRev.Protocol
         /// </summary>
         public void RequestRandomTopic()
         {
-            if (IsReady && IsOpen && IsStrangerConnected)
+            if (ConnectionState == ConnectionState.Connected && ClientState == ClientState.Chatting)
             {
                 SendPacket(
                     new RandomTopicPacket(CurrentContactUID)
@@ -277,12 +320,11 @@ namespace ObcyProtoRev.Protocol
         /// <param name="targetLocation">Desired location to search in.</param>
         public void SearchForStranger(Location targetLocation)
         {
-            if (IsReady && IsOpen && !IsStrangerConnected)
+            if (ConnectionState == ConnectionState.Connected && ClientState == ClientState.Idle)
             {
-                if (!IsSearchingForStranger)
+                if (ClientState == ClientState.Idle)
                 {
-                    IsSearchingForStranger = true;
-
+                    ClientState = ClientState.SearchingForStranger;
                     var info = new PersonInfo(0, targetLocation);
 
                     SendPacket(
@@ -298,7 +340,7 @@ namespace ObcyProtoRev.Protocol
         /// <param name="message">Message content to be sent.</param>
         public void SendMessage(string message)
         {
-            if (IsReady && IsOpen && IsStrangerConnected)
+            if (ConnectionState == ConnectionState.Connected && ClientState == ClientState.Chatting)
             {
                 SendPacket(
                     new MessagePacket(message, CurrentContactUID)
@@ -312,7 +354,7 @@ namespace ObcyProtoRev.Protocol
         /// <param name="packet">Packet to be sent.</param>
         public void SendPacket(Packet packet)
         {
-            if (IsReady && IsOpen)
+            if (ConnectionState == ConnectionState.Connected || ConnectionState == ConnectionState.Reconnecting)
                 WebSocket.Send(packet);
 
             OnJsonWrite(packet);
@@ -325,7 +367,7 @@ namespace ObcyProtoRev.Protocol
         /// <remarks>Make sure the packet is WELL formed. Otherwise client will certainly get disconnected.</remarks>
         public void SendPacket(string json)
         {
-            if (IsReady && IsOpen)
+            if (ConnectionState == ConnectionState.Connected)
                 WebSocket.Send(json);
 
             OnJsonWrite(json);
@@ -368,36 +410,95 @@ namespace ObcyProtoRev.Protocol
             WebsocketAddress = new TargetWebsocketAddress();
             IsReady = true;
         }
+
+        private void CreateAndStartReconnectTimer()
+        {
+            // 30 seconds for ping receive + 5 reserved seconds just in case.
+            ReconnectTimer = new Timer(35000);
+            ReconnectTimer.Elapsed += ReconnectTimer_Elapsed;
+
+            ReconnectTimer.Start();
+        }
+
+        private void SendReconnectRequest()
+        {
+            var reconnectInfo = new ReconnectInfo(
+                        IsMobile,
+                        ClientState,
+                        LastConnectionTime,
+                        LastPostID,
+                        PreviousContactUID,
+                        CurrentContactUID,
+                        CurrentConnectionUID,
+                        UserAgent
+                    );
+
+            var reconnectRequestPacket = new ReconnectRequestPacket(reconnectInfo);
+            SendPacket(reconnectRequestPacket);
+        }
+        #endregion
+
+        #region Reconnect timer stuff
+        private void ReconnectTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            if (NoPingCounter < 1)
+            {
+                NoPingCounter++;
+            }
+            else
+            {
+                if (ConnectionState != ConnectionState.Reconnecting)
+                {
+                    ConnectionState = ConnectionState.Reconnecting;
+                    OnConnectionLost();
+                }
+                AttemptReconnect();
+            }
+        }
+
+        private void AttemptReconnect()
+        {
+            WebSocket.Close();
+
+            if (NetworkUtilities.InternetConnectionAvailable(2000))
+            {
+                RenewConnectionAddress();
+                CreateWebsocket();
+
+                WebSocket.Connect();
+            }
+        }
+
         #endregion
 
         #region Packet handler events
         private void WebsocketPacketHandler_SocketMessageReceived(List<Packet> packets)
         {
-            // Server may send more than one packet.
-            // -------------------------------------
             foreach (var packet in packets)
             {
-                // Why so many "if" statements out there?
-                // I guess it's because switch becomes spaghetti-code at some point.
-                // You know, I'm not hungry, and you've gotta admit it:
-                // these conditionals are pretty good-looking.
-                // ---------------------------------------------------------------
-
-                if (packet.Header == ConnectionAcceptedPacket.ToString())
+                if (PacketHelper.IsConnectionAcceptedPacket(packet))
                 {
                     Debug.Assert(packet.Data != null, "ConnectionAccepted: packet.Data != null");
 
-                    OnConnectionAccepted(packet.Data["conn_id"].ToString());
+                    if (ConnectionState == ConnectionState.Reconnecting)
+                    {
+                        SendReconnectRequest();
+                        return;
+                    }
+
+                    CurrentConnectionUID = packet.Data["conn_id"].ToString();
+                    CreateAndStartReconnectTimer();
+                    OnConnectionAccepted();
                 }
 
-                if (packet.Header == ConversationEndedPacket.ToString())
+                if (PacketHelper.IsConversationEndedPacket(packet))
                 {
                     // Unusual behavior, server sends "convended" without any data
                     // if "flag stranger" packet is sent and no conversation have
                     // been started before.
                     //
                     // Hence, we have to handle it like this.
-                    // -----------------------------------------------------------
+
                     if (packet.Data != null)
                     {
                         OnConversationEnded(
@@ -418,9 +519,10 @@ namespace ObcyProtoRev.Protocol
                     }
                 }
 
-                if (packet.Header == StrangerDisconnectedPacket.ToString())
+                if (PacketHelper.IsStrangerDisconnectedPacket(packet))
                 {
                     Debug.Assert(packet.Data != null, "StrangerDisconnected: packet.Data != null");
+                    PreviousContactUID = CurrentContactUID;
 
                     OnConversationEnded(
                         new DisconnectInfo(
@@ -430,7 +532,7 @@ namespace ObcyProtoRev.Protocol
                     );
                 }
 
-                if (packet.Header == MessageReceivedPacket.ToString())
+                if (PacketHelper.IsMessageReceivedPacket(packet))
                 {
                     Debug.Assert(packet.Data != null, "MessageReceived: packet.Data != null");
 
@@ -440,21 +542,26 @@ namespace ObcyProtoRev.Protocol
                         int.Parse(packet.Data["cid"].ToString()),
                         int.Parse(packet.AdditionalFields["post_id"].ToString())
                     );
+                    LastPostID = int.Parse(packet.AdditionalFields["post_id"].ToString());
+
                     OnMessageReceived(message);
                 }
-
-                if (packet.Header == OnlinePeopleCountPacket.ToString())
+                    
+                if (PacketHelper.IsOnlinePeopleCountPacket(packet))
                 {
                     Debug.Assert(packet.Data != null, "OnlineCountChanged: packet.Data != null");
-
+                     
                     OnOnlinePeopleCountChanged(
                         int.Parse(packet.Data.ToString())
                     );
                 }
 
-                if (packet.Header == PingPacket.ToString())
+                if (PacketHelper.IsPingPacket(packet))
                 {
                     Debug.Assert(packet.Data == null, "PingReceived: packet.Data == null");
+
+                    // Extension method, see ObcyProtoRev.Extensions.TimerExtensions
+                    ReconnectTimer.Reset();
 
                     if (KeepAlive)
                         PongResponse();
@@ -462,7 +569,7 @@ namespace ObcyProtoRev.Protocol
                     OnPingReceived(DateTime.Now);
                 }
 
-                if (packet.Header == RandomTopicReceivedPacket.ToString())
+                if (PacketHelper.IsRandomTopicReceivedPacket(packet))
                 {
                     Debug.Assert(packet.Data != null, "RandomTopicReceived: packet.Data != null");
 
@@ -472,15 +579,17 @@ namespace ObcyProtoRev.Protocol
                         int.Parse(packet.Data["cid"].ToString()),
                         int.Parse(packet.AdditionalFields["post_id"].ToString())
                     );
+                    LastPostID = int.Parse(packet.AdditionalFields["post_id"].ToString());
+
                     OnMessageReceived(message);
                 }
 
-                if (packet.Header == ReconnectionSuccessPacket.ToString())
+                if (PacketHelper.IsReconnectionSuccessPacket(packet))
                 {
-                    // TODO: Requires more reverse-engineering.
+                    ConnectionState = ConnectionState.Connected;
                 }
 
-                if (packet.Header == ServiceMessageReceivedPacket.ToString())
+                if (PacketHelper.IsServiceMessageReceivedPacket(packet))
                 {
                     Debug.Assert(packet.Data != null, "ServiceMessageReceived: packet.Data != null");
 
@@ -488,7 +597,7 @@ namespace ObcyProtoRev.Protocol
                     OnMessageReceived(message);
                 }
 
-                if (packet.Header == StrangerChatstatePacket.ToString())
+                if (PacketHelper.IsStrangerChatstatePacket(packet))
                 {
                     Debug.Assert(packet.Data != null, "StrangerChatstateChanged: packet.Data != null");
 
@@ -497,11 +606,19 @@ namespace ObcyProtoRev.Protocol
                     );
                 }
 
-                if (packet.Header == StrangerFoundPacket.ToString())
+                if (PacketHelper.IsStrangerFoundPacket(packet))
                 {
                     Debug.Assert(packet.Data != null, "StrangerFound: packet.Data != null");
 
                     CurrentContactUID = packet.Data["ckey"].ToString();
+
+                    // Reliability fix to ensure we find a proper stranger upon reconnection to the FIRST
+                    // stranger in the current session. Oh, look - their webclient fucked it up.
+                    if (!HasEverSearchedForStranger)
+                    {
+                        PreviousContactUID = CurrentContactUID;
+                        HasEverSearchedForStranger = true;
+                    }
 
                     OnStrangerFound(
                         new ContactInfo(
@@ -534,6 +651,8 @@ namespace ObcyProtoRev.Protocol
         #region Low-level websocket events
         private void WebSocket_OnOpen(object sender, EventArgs e)
         {
+            LastConnectionTime = DateTime.Now;
+
             OnSocketOpened();
         }
 
@@ -555,13 +674,19 @@ namespace ObcyProtoRev.Protocol
         #endregion
 
         #region Event invokers
-        protected virtual void OnConnectionAccepted(string connectionid)
+        protected virtual void OnConnectionAccepted()
         {
             var handler = ConnectionAccepted;
 
             if (handler != null)
-                handler(this, connectionid);
+                handler(this, EventArgs.Empty);
 
+        }
+
+        protected virtual void OnConnectionLost()
+        {
+            var handler = ConnectionLost;
+            if (handler != null) handler(this, EventArgs.Empty);
         }
 
         protected virtual void OnMessageReceived(Message message)
@@ -578,8 +703,7 @@ namespace ObcyProtoRev.Protocol
 
         protected virtual void OnStrangerFound(ContactInfo contactinfo)
         {
-            IsSearchingForStranger = false;
-            IsStrangerConnected = true;
+            ClientState = ClientState.Chatting;
 
             var handler = StrangerFound;
 
@@ -589,7 +713,7 @@ namespace ObcyProtoRev.Protocol
 
         protected virtual void OnConversationEnded(DisconnectInfo disconnectInfo)
         {
-            IsStrangerConnected = false;
+            ClientState = ClientState.Idle;
 
             var handler = ConversationEnded;
 
@@ -629,8 +753,8 @@ namespace ObcyProtoRev.Protocol
 
         protected virtual void OnServerClosedConnection()
         {
-            IsOpen = false;
-            IsStrangerConnected = false;
+            ConnectionState = ConnectionState.Offline;
+            ClientState = ClientState.Idle;
 
             var handler = ServerClosedConnection;
 
@@ -646,8 +770,11 @@ namespace ObcyProtoRev.Protocol
 
         protected virtual void OnSocketClosed(string reason)
         {
-            IsOpen = false;
-            IsStrangerConnected = false;
+            if (ConnectionState != ConnectionState.Reconnecting)
+            {
+                ConnectionState = ConnectionState.Offline;
+                ClientState = ClientState.Idle;
+            }
 
             var handler = SocketClosed;
 
@@ -663,7 +790,10 @@ namespace ObcyProtoRev.Protocol
 
         protected virtual void OnSocketOpened()
         {
-            IsOpen = true;
+            if (ConnectionState != ConnectionState.Reconnecting)
+            {
+                ConnectionState = ConnectionState.Connected;
+            }
 
             var handler = SocketOpened;
 

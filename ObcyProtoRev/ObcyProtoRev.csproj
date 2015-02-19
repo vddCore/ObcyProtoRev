@@ -45,7 +45,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions\TimerExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Protocol\Client\ClientState.cs" />
     <Compile Include="Protocol\Client\ContactInfo.cs" />
     <Compile Include="Protocol\Client\DisconnectInfo.cs" />
     <Compile Include="Protocol\Client\Identity\Location.cs" />
@@ -62,8 +64,9 @@
     <Compile Include="Protocol\Client\Packets\StrangerSearchPacket.cs" />
     <Compile Include="Protocol\Client\Identity\PersonInfo.cs" />
     <Compile Include="Protocol\Client\ReconnectInfo.cs" />
-    <Compile Include="Protocol\Client\UserAgent.cs" />
+    <Compile Include="Protocol\Client\Identity\UserAgent.cs" />
     <Compile Include="Protocol\Connection.cs" />
+    <Compile Include="Protocol\ConnectionState.cs" />
     <Compile Include="Protocol\Server\Packets\ConnectionAcceptedPacket.cs" />
     <Compile Include="Protocol\Server\Packets\ConversationEndedPacket.cs" />
     <Compile Include="Protocol\Server\Packets\MessageReceivedPacket.cs" />
@@ -81,6 +84,8 @@
     <Compile Include="Protocol\SockJs\PacketType.cs" />
     <Compile Include="Protocol\SockJs\SocketGenerator.cs" />
     <Compile Include="Protocol\SockJs\TargetWebsocketAddress.cs" />
+    <Compile Include="Utilities\NetworkUtilities.cs" />
+    <Compile Include="Utilities\PacketHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
