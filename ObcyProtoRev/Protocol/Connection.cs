@@ -7,7 +7,6 @@ using ObcyProtoRev.Extensions;
 using ObcyProtoRev.Protocol.Client;
 using ObcyProtoRev.Protocol.Client.Identity;
 using ObcyProtoRev.Protocol.Client.Packets;
-using ObcyProtoRev.Protocol.Server.Packets;
 using ObcyProtoRev.Protocol.SockJs;
 using ObcyProtoRev.Utilities;
 using WebSocketSharp;
@@ -169,6 +168,11 @@ namespace ObcyProtoRev.Protocol
         /// Event that gets fired when client receives "Ping" service packet.
         /// </summary>
         public event DateTimeEventHandler PingReceived;
+
+        /// <summary>
+        /// Event that gets fired when connection revival is successful.
+        /// </summary>
+        public event EventHandler Reconnected;
 
         /// <summary>
         /// Event that gets fired when client receives the meaningful "c" socket packet.
@@ -458,7 +462,8 @@ namespace ObcyProtoRev.Protocol
 
         private void AttemptReconnect()
         {
-            WebSocket.Close();
+            if(WebSocket.IsAlive)
+                WebSocket.Close();
 
             if (NetworkUtilities.InternetConnectionAvailable(2000))
             {
@@ -468,7 +473,6 @@ namespace ObcyProtoRev.Protocol
                 WebSocket.Connect();
             }
         }
-
         #endregion
 
         #region Packet handler events
@@ -586,7 +590,33 @@ namespace ObcyProtoRev.Protocol
 
                 if (PacketHelper.IsReconnectionSuccessPacket(packet))
                 {
-                    ConnectionState = ConnectionState.Connected;
+                    Debug.Assert(packet.Data != null, "ReconnectionSuccess: packet.Data != null");
+
+                    var state = int.Parse(packet.Data["state"].ToString());
+
+                    if (state == 1)
+                    {
+                        OnReconnected();
+                    }
+                    else if (state == 0)
+                    {
+                        if (ClientState == ClientState.Chatting)
+                        {
+                            // -1: Stranger disonnected from me.
+                            OnConversationEnded(
+                                new DisconnectInfo(false, -1)
+                            );
+                            SearchForStranger(Location.WholePoland);
+                        }
+                    }
+                    else if (state == -1)
+                    {
+                        // -2: I disconnected from stranger.
+                        OnConversationEnded(
+                            new DisconnectInfo(false, -2)
+                        );
+                        SearchForStranger(Location.WholePoland);
+                    }
                 }
 
                 if (PacketHelper.IsServiceMessageReceivedPacket(packet))
@@ -686,6 +716,12 @@ namespace ObcyProtoRev.Protocol
         protected virtual void OnConnectionLost()
         {
             var handler = ConnectionLost;
+            if (handler != null) handler(this, EventArgs.Empty);
+        }
+
+        protected virtual void OnReconnected()
+        {
+            var handler = Reconnected;
             if (handler != null) handler(this, EventArgs.Empty);
         }
 
