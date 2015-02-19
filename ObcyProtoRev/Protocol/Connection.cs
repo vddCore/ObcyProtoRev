@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Timers;
 
 using ObcyProtoRev.Extensions;
@@ -10,6 +11,7 @@ using ObcyProtoRev.Protocol.Client.Packets;
 using ObcyProtoRev.Protocol.SockJs;
 using ObcyProtoRev.Utilities;
 using WebSocketSharp;
+using Timer = System.Timers.Timer;
 
 namespace ObcyProtoRev.Protocol
 {
@@ -451,6 +453,8 @@ namespace ObcyProtoRev.Protocol
             }
             else
             {
+                ReconnectTimer.Interval = 2500;
+
                 if (ConnectionState != ConnectionState.Reconnecting)
                 {
                     ConnectionState = ConnectionState.Reconnecting;
@@ -471,6 +475,8 @@ namespace ObcyProtoRev.Protocol
                 CreateWebsocket();
 
                 WebSocket.Connect();
+
+                ReconnectTimer.Interval = 35000;
             }
         }
         #endregion
@@ -487,7 +493,7 @@ namespace ObcyProtoRev.Protocol
                     if (ConnectionState == ConnectionState.Reconnecting)
                     {
                         SendReconnectRequest();
-                        return;
+                        continue;
                     }
 
                     CurrentConnectionUID = packet.Data["conn_id"].ToString();
@@ -592,6 +598,7 @@ namespace ObcyProtoRev.Protocol
                 {
                     Debug.Assert(packet.Data != null, "ReconnectionSuccess: packet.Data != null");
 
+                    ConnectionState = ConnectionState.Connected;
                     var state = int.Parse(packet.Data["state"].ToString());
 
                     if (state == 1)
@@ -600,13 +607,17 @@ namespace ObcyProtoRev.Protocol
                     }
                     else if (state == 0)
                     {
-                        if (ClientState == ClientState.Chatting)
+                        if (ClientState == ClientState.Idle || ClientState == ClientState.Chatting)
                         {
-                            // -1: Stranger disonnected from me.
+                            // -1: Stranger disconnected from me.
                             OnConversationEnded(
                                 new DisconnectInfo(false, -1)
                             );
+
+                            OnReconnected();
                             SearchForStranger(Location.WholePoland);
+
+                            //ClientState = ClientState.Chatting;
                         }
                     }
                     else if (state == -1)
@@ -615,6 +626,8 @@ namespace ObcyProtoRev.Protocol
                         OnConversationEnded(
                             new DisconnectInfo(false, -2)
                         );
+
+                        OnReconnected();
                         SearchForStranger(Location.WholePoland);
                     }
                 }
@@ -789,8 +802,11 @@ namespace ObcyProtoRev.Protocol
 
         protected virtual void OnServerClosedConnection()
         {
-            ConnectionState = ConnectionState.Offline;
-            ClientState = ClientState.Idle;
+            if (ConnectionState != ConnectionState.Reconnecting)
+            {
+                ConnectionState = ConnectionState.Offline;
+                ClientState = ClientState.Idle;
+            }
 
             var handler = ServerClosedConnection;
 
