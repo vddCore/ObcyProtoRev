@@ -4,8 +4,17 @@ using ObcyProtoRev.Protocol.SockJs;
 
 namespace ObcyProtoRev.Protocol.Client.Packets
 {
-    class StrangerSearchPacket : Packet
+    /// <summary>
+    /// Represents a stranger search request packet which is ready to be sent as-is. This class cannot be inherited.
+    /// </summary>
+    public sealed class StrangerSearchPacket : Packet
     {
+        /// <summary>
+        /// Creates a new instance of StrangerSearchPacket class.
+        /// </summary>
+        /// <param name="myInfo">A value describing sex and location of a client.</param>
+        /// <param name="preferencesInfo">A value describing preferences for requested search.</param>
+        /// <param name="channel">A channel to search in.</param>
         public StrangerSearchPacket(PersonInfo myInfo, PersonInfo preferencesInfo, string channel)
         {
             Header = "_sas";
