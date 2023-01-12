@@ -29,6 +29,8 @@ namespace ObcyProtoRev.Protocol
         /// Gets or sets a value exposing current generated target websocket address.
         /// </summary>
         private TargetWebsocketAddress WebsocketAddress { get; set; }
+
+        private List<string> EncounteredClientIDs { get; set; }
         #endregion
 
         #region Public fields
@@ -71,6 +73,8 @@ namespace ObcyProtoRev.Protocol
         /// Gets a value indicating current stranger UID assigned by the service.
         /// </summary>
         public string CurrentContactUID { get; private set; }
+
+        public string CurrentCID { get; private set; }
 
         /// <summary>
         /// Gets or sets a value describing an identity that should be sent on connection acknowledge.
@@ -174,6 +178,8 @@ namespace ObcyProtoRev.Protocol
             RenewConnectionAddress();
             CreateWebsocket();
             RegisterPacketHandlerEvents();
+
+            EncounteredClientIDs = new List<string>();
 
             KeepAlive = true;
             IsReady = true;
@@ -417,6 +423,12 @@ namespace ObcyProtoRev.Protocol
 
                 if (packet.Header == StrangerDisconnectedPacket.ToString())
                 {
+                    if (CurrentCID != packet.Data.ToString() && EncounteredClientIDs.Contains(packet.Data.ToString()))
+                    {
+                        EncounteredClientIDs.Remove(packet.Data.ToString());
+                        continue;
+                    }
+
                     IsStrangerConnected = false;
 
                     if (packet.Data == null)
@@ -526,6 +538,11 @@ namespace ObcyProtoRev.Protocol
                         throw new Exception("Invalid packet received, packet data is null.");
 
                     CurrentContactUID = packet.Data["ckey"].ToString();
+
+                    SendPacket(new ConversationStartAcknowledged(CurrentContactUID));
+                    ActionID++;
+
+                    EncounteredClientIDs.Add(packet.Data["cid"].ToString());
 
                     IsSearchingForStranger = false;
                     IsStrangerConnected = true;
