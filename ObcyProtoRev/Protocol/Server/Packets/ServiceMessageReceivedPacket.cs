@@ -1,6 +1,6 @@
 ﻿namespace ObcyProtoRev.Protocol.Server.Packets
 {
-    static class ServiceMessageReceived
+    static class ServiceMessageReceivedPacket
     {
         public static new string ToString()
         {
