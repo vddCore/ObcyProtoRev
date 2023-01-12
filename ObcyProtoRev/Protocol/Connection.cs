@@ -381,10 +381,10 @@ namespace ObcyProtoRev.Protocol
                     if (packet.Data == null)
                         throw new Exception("Invalid packet received, packet data is null.");
 
-                    SendPacket(new ClientInfoPacket(false, UserAgent));
+                    SendPacket(new ClientInfoPacket(false, UserAgent, packet.Data["hash"].ToString(), 0, false));
                     SendPacket(new OpenAcknowledgedPacket());
 
-                    var eventArgs = new ConnectionAcceptedEventArgs(packet.Data["conn_id"].ToString());
+                    var eventArgs = new ConnectionAcceptedEventArgs(packet.Data["conn_id"].ToString(), packet.Data["hash"].ToString());
                     ConnectionAccepted?.Invoke(this, eventArgs);
                     continue;
                 }
@@ -562,7 +562,7 @@ namespace ObcyProtoRev.Protocol
             ConnectionAcknowledged?.Invoke(this, EventArgs.Empty);
         }
         #endregion
-
+        
         #region Low-level websocket events
         private void WebSocket_OnOpen(object sender, EventArgs e)
         {

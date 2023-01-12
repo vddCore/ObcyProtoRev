@@ -8,7 +8,7 @@ namespace ObcyProtoRev.Protocol.SockJs
         public string SocketSeed { get; }
 
         public string Origin => "http://6obcy.in";
-        public string SocketIP => "91.185.186.211";
+        public string SocketIP => "server.6obcy.pl";
 
         public TargetWebsocketAddress()
         {
