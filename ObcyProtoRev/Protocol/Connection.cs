@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 using ObcyProtoRev.Protocol.Client;
 using ObcyProtoRev.Protocol.Client.Identity;
@@ -224,8 +223,8 @@ namespace ObcyProtoRev.Protocol
                 );
                 IsStrangerConnected = false;
 
-                DisconnectInfo di = new DisconnectInfo(false, 0);
-                OnConversationEnded(di);
+                var di = new DisconnectInfo(false, 0);
+                ConversationEnded?.Invoke(this, di);
 
                 ActionID++;
             }
@@ -238,10 +237,7 @@ namespace ObcyProtoRev.Protocol
         {
             if (IsOpen && IsReady)
             {
-                SendPacket(
-                    new ReportStrangerPacket(CurrentContactUID)
-                );
-
+                SendPacket(new ReportStrangerPacket(CurrentContactUID));
                 ActionID++;
             }
         }
@@ -253,9 +249,7 @@ namespace ObcyProtoRev.Protocol
         {
             if (IsOpen && IsReady)
             {
-                SendPacket(
-                    new PongPacket()
-                );
+                SendPacket(new PongPacket());
             }
         }
 
@@ -267,9 +261,7 @@ namespace ObcyProtoRev.Protocol
         {
             if (IsReady && IsOpen && IsStrangerConnected)
             {
-                SendPacket(
-                    new ChatstatePacket(isTyping, CurrentContactUID)
-                );
+                SendPacket(new ChatstatePacket(isTyping, CurrentContactUID));
             }
         }
 
@@ -280,10 +272,7 @@ namespace ObcyProtoRev.Protocol
         {
             if (IsReady && IsOpen && IsStrangerConnected)
             {
-                SendPacket(
-                    new RandomTopicPacket(CurrentContactUID)
-                );
-
+                SendPacket(new RandomTopicPacket(CurrentContactUID));
                 ActionID++;
             }
         }
@@ -301,12 +290,8 @@ namespace ObcyProtoRev.Protocol
                     IsSearchingForStranger = true;
 
                     var info = new PersonInfo(0, targetLocation);
-
-                    SendPacket(
-                        new StrangerSearchPacket(info, info, "main")
-                    );
+                    SendPacket(new StrangerSearchPacket(info, info, "main"));
                 }
-
                 ActionID++;
             }
         }
@@ -319,14 +304,9 @@ namespace ObcyProtoRev.Protocol
         {
             if (IsReady && IsOpen && IsStrangerConnected)
             {
-                SendPacket(
-                    new MessagePacket(message, CurrentContactUID)
-                );
-
-                OnMessageSent(
-                    new Message(message, null, null, MessageType.Chat)
-                );
-
+                SendPacket(new MessagePacket(message, CurrentContactUID));
+                
+                MessageSent?.Invoke(this, new Message(message, null, null, MessageType.Chat));
                 ActionID++;
             }
         }
@@ -340,7 +320,7 @@ namespace ObcyProtoRev.Protocol
             if (IsReady && IsOpen)
                 WebSocket.Send(packet);
 
-            OnJsonWrite(packet);
+            JsonWritten?.Invoke(this, packet);
         }
 
         /// <summary>
@@ -353,7 +333,7 @@ namespace ObcyProtoRev.Protocol
             if (IsReady && IsOpen)
                 WebSocket.Send(json);
 
-            OnJsonWrite(json);
+            JsonWritten?.Invoke(this, json);
         }
         #endregion
 
@@ -389,7 +369,6 @@ namespace ObcyProtoRev.Protocol
                     IsReady = false;
                 }
             }
-
             WebsocketAddress = new TargetWebsocketAddress();
             IsReady = true;
         }
@@ -410,9 +389,12 @@ namespace ObcyProtoRev.Protocol
 
                 if (packet.Header == ConnectionAcceptedPacket.ToString())
                 {
-                    Debug.Assert(packet.Data != null, "ConnectionAccepted: packet.Data != null");
+                    if (packet.Data == null)
+                        throw new Exception("Invalid packet received, packet data is null.");
 
-                    OnConnectionAccepted(packet.Data["conn_id"].ToString());
+                    SendPacket(new ClientInfoPacket(false, UserAgent));
+                    SendPacket(new OpenAcknowledgedPacket());
+                    ConnectionAccepted?.Invoke(this, packet.Data["conn_id"].ToString());
                 }
 
                 if (packet.Header == ConversationEndedPacket.ToString())
@@ -425,267 +407,154 @@ namespace ObcyProtoRev.Protocol
                     // -----------------------------------------------------------
                     if (packet.Data != null)
                     {
-                        OnConversationEnded(
-                            new DisconnectInfo(
-                                true,
-                                int.Parse(packet.Data.ToString())
-                            )
-                        );
+                        var di = new DisconnectInfo(true, int.Parse(packet.Data.ToString()));
+                        ConversationEnded?.Invoke(this, di);
                     }
                     else
                     {
-                        OnConversationEnded(
-                            new DisconnectInfo(
-                                true,
-                                0
-                            )
-                        );
+                        var di = new DisconnectInfo(true, 0);
+                        ConversationEnded?.Invoke(this, di);
                     }
+                    IsStrangerConnected = false;
                 }
 
                 if (packet.Header == StrangerDisconnectedPacket.ToString())
                 {
-                    Debug.Assert(packet.Data != null, "StrangerDisconnected: packet.Data != null");
+                    if (packet.Data == null)
+                        throw new Exception("Invalid packet received, packet data is null.");
 
-                    OnConversationEnded(
-                        new DisconnectInfo(
-                            false,
-                            int.Parse(packet.Data.ToString())
-                        )
-                    );
+                    var di = new DisconnectInfo(false, int.Parse(packet.Data.ToString()));
+                    ConversationEnded?.Invoke(this, di);
                 }
 
                 if (packet.Header == MessageReceivedPacket.ToString())
                 {
-                    Debug.Assert(packet.Data != null, "MessageReceived: packet.Data != null");
+                    if (packet.Data == null)
+                        throw new Exception("Invalid packet received, packet data is null.");
 
                     var message = new Message(
                         packet.Data["msg"].ToString(),
                         int.Parse(packet.Data["cid"].ToString()),
-                        int.Parse(packet.AdditionalFields["post_id"].ToString())
-,
-                        MessageType.Chat);
-                    OnMessageReceived(message);
+                        int.Parse(packet.AdditionalFields["post_id"].ToString()),
+                        MessageType.Chat
+                    );
+                    MessageReceived?.Invoke(this, message);
                 }
 
                 if (packet.Header == OnlinePeopleCountPacket.ToString())
                 {
-                    Debug.Assert(packet.Data != null, "OnlineCountChanged: packet.Data != null");
+                    if (packet.Data == null)
+                        throw new Exception("Invalid packet received, packet data is null.");
 
-                    OnOnlinePeopleCountChanged(
-                        int.Parse(packet.Data.ToString())
-                    );
+                    OnlinePeopleCountChanged?.Invoke(this, int.Parse(packet.Data.ToString()));
                 }
 
                 if (packet.Header == PingPacket.ToString())
                 {
-                    Debug.Assert(packet.Data == null, "PingReceived: packet.Data == null");
+                    if (packet.Data == null)
+                        throw new Exception("Invalid packet received, packet data is null.");
 
                     if (KeepAlive)
                         PongResponse();
 
-                    OnPingReceived(DateTime.Now);
+                    PingReceived?.Invoke(this, DateTime.Now);
                 }
 
                 if (packet.Header == RandomTopicReceivedPacket.ToString())
                 {
-                    Debug.Assert(packet.Data != null, "RandomTopicReceived: packet.Data != null");
+                    if (packet.Data == null)
+                        throw new Exception("Invalid packet received, packet data is null.");
 
                     var message = new Message(
                         packet.Data["topic"].ToString(),
                         int.Parse(packet.Data["cid"].ToString()),
-                        int.Parse(packet.AdditionalFields["post_id"].ToString())
-,
-                        MessageType.Topic);
-                    OnMessageReceived(message);
+                        int.Parse(packet.AdditionalFields["post_id"].ToString()),
+                        MessageType.Topic
+                    );
+                    MessageReceived?.Invoke(this, message);
                 }
 
                 if (packet.Header == ServiceMessageReceivedPacket.ToString())
                 {
-                    Debug.Assert(packet.Data != null, "ServiceMessageReceived: packet.Data != null");
+                    if (packet.Data == null)
+                        throw new Exception("Invalid packet received, packet data is null.");
 
                     var message = new Message(packet.Data.ToString(), null, null, MessageType.Service);
-                    OnMessageReceived(message);
+                    MessageReceived?.Invoke(this, message);
                 }
 
                 if (packet.Header == StrangerChatstatePacket.ToString())
                 {
-                    Debug.Assert(packet.Data != null, "StrangerChatstateChanged: packet.Data != null");
+                    if (packet.Data == null)
+                        throw new Exception("Invalid packet received, packet data is null.");
 
-                    OnStrangerChatstateChanged(
-                        bool.Parse(packet.Data.ToString())
-                    );
+                    StrangerChatstateChanged?.Invoke(this, bool.Parse(packet.Data.ToString()));
                 }
 
                 if (packet.Header == StrangerFoundPacket.ToString())
                 {
-                    Debug.Assert(packet.Data != null, "StrangerFound: packet.Data != null");
+                    if (packet.Data == null)
+                        throw new Exception("Invalid packet received, packet data is null.");
 
                     CurrentContactUID = packet.Data["ckey"].ToString();
 
-                    OnStrangerFound(
-                        new ContactInfo(
-                            int.Parse(packet.Data["cid"].ToString()),
-                            packet.Data["ckey"].ToString(),
-                            bool.Parse(packet.Data["flaged"].ToString())
-,
-                            packet.Data["info"])
+                    IsSearchingForStranger = false;
+                    IsStrangerConnected = true;
+
+                    var ci = new ContactInfo(
+                        int.Parse(packet.Data["cid"].ToString()),
+                        packet.Data["ckey"].ToString(),
+                        bool.Parse(packet.Data["flaged"].ToString()),
+                        packet.Data["info"]
                     );
+                    StrangerFound?.Invoke(this, ci);
                 }
             }
         }
 
         private void WebsocketPacketHandlerOnSocketHeartbeatReceived(DateTime heartbeatTime)
         {
-            OnHeartbeatReceived(heartbeatTime);
+            HeartbeatReceived?.Invoke(this, heartbeatTime);
         }
 
         private void WebsocketPacketHandlerOnConnectionClosePacketReceived(EventArgs e)
         {
-            OnServerClosedConnection();
+            IsOpen = false;
+            IsStrangerConnected = false;
+
+            ServerClosedConnection?.Invoke(this, e);
         }
 
         private void WebsocketPacketHandler_ConnectionOpenPacketReceived(EventArgs e)
         {
-            OnConnectionAcknowledged();
+            ConnectionAcknowledged?.Invoke(this, EventArgs.Empty);
         }
         #endregion
 
         #region Low-level websocket events
         private void WebSocket_OnOpen(object sender, EventArgs e)
         {
-            OnSocketOpened();
+            IsOpen = true;
+            SocketOpened?.Invoke(this, e);
         }
 
         private void WebSocket_OnMessage(object sender, MessageEventArgs messageEventArgs)
         {
-            OnJsonRead(messageEventArgs.Data);
+            JsonRead?.Invoke(this, messageEventArgs.Data);
             WebsocketPacketHandler.HandlePacket(messageEventArgs.Data);
         }
 
         private void WebSocket_OnError(object sender, ErrorEventArgs e)
         {
-            OnSocketError(e.Exception);
+            SocketError?.Invoke(this, e.Exception);
         }
 
         private void WebSocket_OnClose(object sender, CloseEventArgs e)
         {
-            OnSocketClosed(e.Reason);
-        }
-        #endregion
-
-        #region Event invokers
-        protected virtual void OnConnectionAccepted(string connectionid)
-        {
-            var handler = ConnectionAccepted;
-
-            SendPacket(new ClientInfoPacket(false, UserAgent));
-            SendPacket(new OpenAcknowledgedPacket());
-            handler?.Invoke(this, connectionid);
-        }
-
-        protected virtual void OnMessageReceived(Message message)
-        {
-            var handler = MessageReceived;
-            handler?.Invoke(this, message);
-        }
-
-        protected virtual void OnMessageSent(Message message)
-        {
-            var handler = MessageSent;
-            handler?.Invoke(this, message);
-        }
-
-        protected virtual void OnOnlinePeopleCountChanged(int count)
-        {
-            var handler = OnlinePeopleCountChanged;
-            handler?.Invoke(this, count);
-        }
-
-        protected virtual void OnStrangerFound(ContactInfo contactinfo)
-        {
-            IsSearchingForStranger = false;
-            IsStrangerConnected = true;
-
-            var handler = StrangerFound;
-
-            handler?.Invoke(this, contactinfo);
-        }
-
-        protected virtual void OnConversationEnded(DisconnectInfo disconnectInfo)
-        {
-            IsStrangerConnected = false;
-
-            var handler = ConversationEnded;
-            handler?.Invoke(this, disconnectInfo);
-        }
-
-        protected virtual void OnStrangerChatstateChanged(bool typing)
-        {
-            var handler = StrangerChatstateChanged;
-            handler?.Invoke(this, typing);
-        }
-
-        protected virtual void OnPingReceived(DateTime pingtime)
-        {
-            var handler = PingReceived;
-            handler?.Invoke(this, pingtime);
-        }
-
-        protected virtual void OnConnectionAcknowledged()
-        {
-            var handler = ConnectionAcknowledged;
-            handler?.Invoke(this, EventArgs.Empty);
-        }
-
-        protected virtual void OnJsonRead(string value)
-        {
-            var handler = JsonRead;
-            handler?.Invoke(this, value);
-        }
-
-        protected virtual void OnJsonWrite(string value)
-        {
-            var handler = JsonWritten;
-            handler?.Invoke(this, value);
-        }
-
-        protected virtual void OnServerClosedConnection()
-        {
             IsOpen = false;
             IsStrangerConnected = false;
 
-            var handler = ServerClosedConnection;
-            handler?.Invoke(this, EventArgs.Empty);
-        }
-
-        protected virtual void OnHeartbeatReceived(DateTime datetime)
-        {
-            var handler = HeartbeatReceived;
-            handler?.Invoke(this, datetime);
-        }
-
-        protected virtual void OnSocketClosed(string reason)
-        {
-            IsOpen = false;
-            IsStrangerConnected = false;
-
-            var handler = SocketClosed;
-            handler?.Invoke(this, reason);
-        }
-
-        protected virtual void OnSocketError(Exception e)
-        {
-            var handler = SocketError;
-            handler?.Invoke(this, e);
-        }
-
-        protected virtual void OnSocketOpened()
-        {
-            IsOpen = true;
-
-            var handler = SocketOpened;
-            handler?.Invoke(this, EventArgs.Empty);
+            SocketClosed?.Invoke(this, e.Reason);
         }
         #endregion
     }
