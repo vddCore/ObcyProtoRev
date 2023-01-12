@@ -58,10 +58,8 @@
     <Compile Include="Protocol\Client\Packets\MessagePacket.cs" />
     <Compile Include="Protocol\Client\Packets\PongPacket.cs" />
     <Compile Include="Protocol\Client\Packets\RandomTopicPacket.cs" />
-    <Compile Include="Protocol\Client\Packets\ReconnectRequestPacket.cs" />
     <Compile Include="Protocol\Client\Packets\StrangerSearchPacket.cs" />
     <Compile Include="Protocol\Client\Identity\PersonInfo.cs" />
-    <Compile Include="Protocol\Client\ReconnectInfo.cs" />
     <Compile Include="Protocol\Client\UserAgent.cs" />
     <Compile Include="Protocol\Connection.cs" />
     <Compile Include="Protocol\Server\Packets\ConnectionAcceptedPacket.cs" />
@@ -70,7 +68,6 @@
     <Compile Include="Protocol\Server\Packets\OnlinePeopleCountPacket.cs" />
     <Compile Include="Protocol\Server\Packets\PingPacket.cs" />
     <Compile Include="Protocol\Server\Packets\RandomTopicReceivedPacket.cs" />
-    <Compile Include="Protocol\Server\Packets\ReconnectionSuccessPacket.cs" />
     <Compile Include="Protocol\Server\Packets\ServiceMessageReceivedPacket.cs" />
     <Compile Include="Protocol\Server\Packets\StrangerDisconnectedPacket.cs" />
     <Compile Include="Protocol\Server\Packets\StrangerFoundPacket.cs" />

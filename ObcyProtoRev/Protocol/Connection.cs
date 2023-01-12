@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
 using ObcyProtoRev.Protocol.Client;
 using ObcyProtoRev.Protocol.Client.Identity;
 using ObcyProtoRev.Protocol.Client.Packets;
@@ -12,18 +13,18 @@ using WebSocketSharp;
 namespace ObcyProtoRev.Protocol
 {
     /// <summary>
-    /// The main service connection class.
+    /// Exposes methods, events and fields used to communicate with 6Obcy service. 
     /// </summary>
     public class Connection
     {
         #region Private fields
         /// <summary>
-        /// Gets or sets connection's underlying websocket.
+        /// Gets or sets a value exposing connection's underlying websocket.
         /// </summary>
         private WebSocket WebSocket { get; set; }
 
         /// <summary>
-        /// Gets or sets current generated target websocket address.
+        /// Gets or sets a value exposing current generated target websocket address.
         /// </summary>
         private TargetWebsocketAddress WebsocketAddress { get; set; }
         #endregion
@@ -40,7 +41,7 @@ namespace ObcyProtoRev.Protocol
         public bool IsOpen { get; private set; }
 
         /// <summary>
-        /// Gets or sets whether a connection should report itself as mobile.
+        /// Gets or sets a value indicating whether a connection should report itself as mobile.
         /// </summary>
         public bool IsMobile { get; set; }
 
@@ -55,12 +56,12 @@ namespace ObcyProtoRev.Protocol
         public bool IsSearchingForStranger { get; private set; }
 
         /// <summary>
-        /// Gets or sets whether the connection should be kept alive automatically.
+        /// Gets or sets a value indicating whether the connection should be kept alive automatically.
         /// </summary>
         public bool KeepAlive { get; set; }
 
         /// <summary>
-        /// Gets or sets whether the connection should send its identity.
+        /// Gets or sets a value indicating whether the connection should send its identity.
         /// </summary>
         public bool SendUserAgent { get; set; }
 
@@ -70,7 +71,7 @@ namespace ObcyProtoRev.Protocol
         public string CurrentContactUID { get; private set; }
 
         /// <summary>
-        /// Gets or sets an identity that should be sent on connection acknowledge.
+        /// Gets or sets a value describing an identity that should be sent on connection acknowledge.
         /// </summary>
         public UserAgent UserAgent { get; set; }
         #endregion
@@ -435,7 +436,7 @@ namespace ObcyProtoRev.Protocol
                     Debug.Assert(packet.Data != null, "MessageReceived: packet.Data != null");
 
                     var message = new Message(
-                        MessageType.Instant,
+                        MessageType.Chat,
                         packet.Data["msg"].ToString(),
                         int.Parse(packet.Data["cid"].ToString()),
                         int.Parse(packet.AdditionalFields["post_id"].ToString())
@@ -467,17 +468,12 @@ namespace ObcyProtoRev.Protocol
                     Debug.Assert(packet.Data != null, "RandomTopicReceived: packet.Data != null");
 
                     var message = new Message(
-                        MessageType.Subject,
+                        MessageType.Topic,
                         packet.Data["topic"].ToString(),
                         int.Parse(packet.Data["cid"].ToString()),
                         int.Parse(packet.AdditionalFields["post_id"].ToString())
                     );
                     OnMessageReceived(message);
-                }
-
-                if (packet.Header == ReconnectionSuccessPacket.ToString())
-                {
-                    // TODO: Requires more reverse-engineering.
                 }
 
                 if (packet.Header == ServiceMessageReceivedPacket.ToString())
