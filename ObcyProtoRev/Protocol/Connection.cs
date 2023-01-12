@@ -569,6 +569,8 @@ namespace ObcyProtoRev.Protocol
         {
             var handler = ConnectionAccepted;
 
+            SendPacket(new ClientInfoPacket(false, UserAgent));
+            SendPacket(new OpenAcknowledgedPacket());
             handler?.Invoke(this, connectionid);
         }
 

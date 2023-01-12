@@ -56,6 +56,7 @@
     <Compile Include="Protocol\Client\Packets\ClientInfoPacket.cs" />
     <Compile Include="Protocol\Client\Packets\DisconnectPacket.cs" />
     <Compile Include="Protocol\Client\Packets\MessagePacket.cs" />
+    <Compile Include="Protocol\Client\Packets\OpenAcknowledgedPacket.cs" />
     <Compile Include="Protocol\Client\Packets\PongPacket.cs" />
     <Compile Include="Protocol\Client\Packets\RandomTopicPacket.cs" />
     <Compile Include="Protocol\Client\Packets\StrangerSearchPacket.cs" />
