@@ -4,7 +4,7 @@ using ObcyProtoRev.Protocol.SockJs;
 namespace ObcyProtoRev.Protocol.Client.Packets
 {
     /// <summary>
-    /// Represents a chatstate packet which is ready to be sent as-is.
+    /// Represents a chatstate packet which is ready to be sent as-is. This class cannot be inherited.
     /// </summary>
     public sealed class ChatstatePacket : Packet
     {
