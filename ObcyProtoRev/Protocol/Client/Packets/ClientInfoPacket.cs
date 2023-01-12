@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using ObcyProtoRev.Protocol.Client.Identity;
 using ObcyProtoRev.Protocol.SockJs;
 
 namespace ObcyProtoRev.Protocol.Client.Packets
