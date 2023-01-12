@@ -75,6 +75,7 @@ namespace ObcyProtoRev.Protocol
         }
         #endregion
 
+        #region Public methods
         public void Close()
         {
             if (IsReady && IsOpen)
@@ -174,6 +175,7 @@ namespace ObcyProtoRev.Protocol
 
             OnJsonWrite(json);
         }
+        #endregion
 
         #region Private methods
         private void CreateWebsocket()
@@ -329,7 +331,7 @@ namespace ObcyProtoRev.Protocol
         #region Low-level websocket events
         private void WebSocket_OnOpen(object sender, EventArgs e)
         {
-            IsOpen = true;
+            OnSocketOpened();
         }
 
         private void WebSocket_OnMessage(object sender, MessageEventArgs messageEventArgs)
@@ -345,7 +347,6 @@ namespace ObcyProtoRev.Protocol
 
         private void WebSocket_OnClose(object sender, CloseEventArgs e)
         {
-            IsOpen = false;
             OnSocketClosed(e.Reason);
         }
         #endregion
