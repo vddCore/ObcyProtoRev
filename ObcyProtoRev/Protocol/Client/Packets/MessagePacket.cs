@@ -3,15 +3,23 @@ using ObcyProtoRev.Protocol.SockJs;
 
 namespace ObcyProtoRev.Protocol.Client.Packets
 {
-    class MessagePacket : Packet
+    /// <summary>
+    /// Represents a message packet class which is ready to be sent as-is. This class cannot be inherited.
+    /// </summary>
+    public sealed class MessagePacket : Packet
     {
-        public MessagePacket(string message, string contactGuid)
+        /// <summary>
+        /// Creates a new instance of MessagePacket class.
+        /// </summary>
+        /// <param name="body">Message content.</param>
+        /// <param name="strangerUID">UID of a stranger who will receive this message.</param>
+        public MessagePacket(string body, string strangerUID)
         {
             Header = "_pmsg";
 
             Data = new JObject();
-            Data["ckey"] = contactGuid;
-            Data["msg"] = message;
+            Data["ckey"] = strangerUID;
+            Data["msg"] = body;
         } 
     }
 }
