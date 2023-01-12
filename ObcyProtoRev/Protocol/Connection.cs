@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -74,6 +74,11 @@ namespace ObcyProtoRev.Protocol
         /// Gets or sets a value describing an identity that should be sent on connection acknowledge.
         /// </summary>
         public UserAgent UserAgent { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value describing packet's action ID.
+        /// </summary>
+        public static int ActionID { get; set; }
         #endregion
 
         #region Delegates
@@ -184,7 +189,7 @@ namespace ObcyProtoRev.Protocol
             IsReady = true;
 
             SendUserAgent = true;
-            UserAgent = new UserAgent("ObcyProtoRev", "0.3.1.0");
+            UserAgent = new UserAgent("", "v2.5");
         }
         #endregion
 
@@ -564,27 +569,25 @@ namespace ObcyProtoRev.Protocol
         {
             var handler = ConnectionAccepted;
 
-            if (handler != null)
-                handler(this, connectionid);
-
+            handler?.Invoke(this, connectionid);
         }
 
         protected virtual void OnMessageReceived(Message message)
         {
             var handler = MessageReceived;
-            if (handler != null) handler(this, message);
+            handler?.Invoke(this, message);
         }
 
         protected virtual void OnMessageSent(Message message)
         {
             var handler = MessageSent;
-            if (handler != null) handler(this, message);
+            handler?.Invoke(this, message);
         }
 
         protected virtual void OnOnlinePeopleCountChanged(int count)
         {
             var handler = OnlinePeopleCountChanged;
-            if (handler != null) handler(this, count);
+            handler?.Invoke(this, count);
         }
 
         protected virtual void OnStrangerFound(ContactInfo contactinfo)
@@ -594,8 +597,7 @@ namespace ObcyProtoRev.Protocol
 
             var handler = StrangerFound;
 
-            if (handler != null)
-                handler(this, contactinfo);
+            handler?.Invoke(this, contactinfo);
         }
 
         protected virtual void OnConversationEnded(DisconnectInfo disconnectInfo)
@@ -603,39 +605,37 @@ namespace ObcyProtoRev.Protocol
             IsStrangerConnected = false;
 
             var handler = ConversationEnded;
-
-            if (handler != null)
-                handler(this, disconnectInfo);
+            handler?.Invoke(this, disconnectInfo);
         }
 
         protected virtual void OnStrangerChatstateChanged(bool typing)
         {
             var handler = StrangerChatstateChanged;
-            if (handler != null) handler(this, typing);
+            handler?.Invoke(this, typing);
         }
 
         protected virtual void OnPingReceived(DateTime pingtime)
         {
             var handler = PingReceived;
-            if (handler != null) handler(this, pingtime);
+            handler?.Invoke(this, pingtime);
         }
 
         protected virtual void OnConnectionAcknowledged()
         {
             var handler = ConnectionAcknowledged;
-            if (handler != null) handler(this, EventArgs.Empty);
+            handler?.Invoke(this, EventArgs.Empty);
         }
 
         protected virtual void OnJsonRead(string value)
         {
             var handler = JsonRead;
-            if (handler != null) handler(this, value);
+            handler?.Invoke(this, value);
         }
 
         protected virtual void OnJsonWrite(string value)
         {
             var handler = JsonWritten;
-            if (handler != null) handler(this, value);
+            handler?.Invoke(this, value);
         }
 
         protected virtual void OnServerClosedConnection()
@@ -644,15 +644,13 @@ namespace ObcyProtoRev.Protocol
             IsStrangerConnected = false;
 
             var handler = ServerClosedConnection;
-
-            if (handler != null)
-                handler(this, EventArgs.Empty);
+            handler?.Invoke(this, EventArgs.Empty);
         }
 
         protected virtual void OnHeartbeatReceived(DateTime datetime)
         {
             var handler = HeartbeatReceived;
-            if (handler != null) handler(this, datetime);
+            handler?.Invoke(this, datetime);
         }
 
         protected virtual void OnSocketClosed(string reason)
@@ -661,15 +659,13 @@ namespace ObcyProtoRev.Protocol
             IsStrangerConnected = false;
 
             var handler = SocketClosed;
-
-            if (handler != null)
-                handler(this, reason);
+            handler?.Invoke(this, reason);
         }
 
         protected virtual void OnSocketError(Exception e)
         {
             var handler = SocketError;
-            if (handler != null) handler(this, e);
+            handler?.Invoke(this, e);
         }
 
         protected virtual void OnSocketOpened()
@@ -677,9 +673,7 @@ namespace ObcyProtoRev.Protocol
             IsOpen = true;
 
             var handler = SocketOpened;
-
-            if (handler != null)
-                handler(this, EventArgs.Empty);
+            handler?.Invoke(this, EventArgs.Empty);
         }
         #endregion
     }
