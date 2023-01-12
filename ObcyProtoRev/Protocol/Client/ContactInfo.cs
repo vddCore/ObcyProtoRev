@@ -3,22 +3,22 @@
 namespace ObcyProtoRev.Protocol.Client
 {
     /// <summary>
-    /// Class responsible for storing currently connected contact information.
+    /// Represents stranger information at the moment of a new stranger search result. This class cannot be inherited.
     /// </summary>
-    public class ContactInfo
+    public sealed class ContactInfo
     {
         /// <summary>
-        /// Gets ClientID assigned by the service.
+        /// Gets a value describing ClientID assigned by the service.
         /// </summary>
         public int ClientID { get; private set; }
 
         /// <summary>
-        /// Gets UID assigned by the service.
+        /// Gets a value describing UID assigned by the service.
         /// </summary>
         public string UID { get; private set; }
 
         /// <summary>
-        /// Gets stranger's preferences such as sex and preferred location.
+        /// Gets a value describing stranger's preferences such as sex and preferred location.
         /// </summary>
         public JToken Preferences { get; private set; }
 
