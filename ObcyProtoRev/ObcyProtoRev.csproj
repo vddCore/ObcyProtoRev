@@ -46,6 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Protocol\Client\Identity\Location.cs" />
     <Compile Include="Protocol\Client\Message.cs" />
     <Compile Include="Protocol\Client\MessageType.cs" />
     <Compile Include="Protocol\Client\Packets\ChatstatePacket.cs" />
@@ -53,6 +54,8 @@
     <Compile Include="Protocol\Client\Packets\DisconnectPacket.cs" />
     <Compile Include="Protocol\Client\Packets\MessagePacket.cs" />
     <Compile Include="Protocol\Client\Packets\PongPacket.cs" />
+    <Compile Include="Protocol\Client\Packets\StrangerSearchPacket.cs" />
+    <Compile Include="Protocol\Client\Identity\PersonInfo.cs" />
     <Compile Include="Protocol\Client\UserAgent.cs" />
     <Compile Include="Protocol\Connection.cs" />
     <Compile Include="Protocol\SockJs\Decoder.cs" />
