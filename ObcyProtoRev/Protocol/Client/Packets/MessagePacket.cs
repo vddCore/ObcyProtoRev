@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using ObcyProtoRev.Protocol.SockJs;
 
 namespace ObcyProtoRev.Protocol.Client.Packets
@@ -20,6 +20,8 @@ namespace ObcyProtoRev.Protocol.Client.Packets
             Data = new JObject();
             Data["ckey"] = strangerUID;
             Data["msg"] = body;
+
+            Data["ceid"] = Connection.ActionID;
         } 
     }
 }

@@ -54,6 +54,7 @@
     <Compile Include="Protocol\Client\PacketHandler.cs" />
     <Compile Include="Protocol\Client\Packets\ChatstatePacket.cs" />
     <Compile Include="Protocol\Client\Packets\ClientInfoPacket.cs" />
+    <Compile Include="Protocol\Client\Packets\ConversationStartAcknowledged.cs" />
     <Compile Include="Protocol\Client\Packets\DisconnectPacket.cs" />
     <Compile Include="Protocol\Client\Packets\MessagePacket.cs" />
     <Compile Include="Protocol\Client\Packets\OpenAcknowledgedPacket.cs" />

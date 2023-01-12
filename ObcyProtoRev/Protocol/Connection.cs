@@ -226,6 +226,8 @@ namespace ObcyProtoRev.Protocol
 
                 DisconnectInfo di = new DisconnectInfo(false, 0);
                 OnConversationEnded(di);
+
+                ActionID++;
             }
         }
 
@@ -239,6 +241,8 @@ namespace ObcyProtoRev.Protocol
                 SendPacket(
                     new ReportStrangerPacket(CurrentContactUID)
                 );
+
+                ActionID++;
             }
         }
 
@@ -279,6 +283,8 @@ namespace ObcyProtoRev.Protocol
                 SendPacket(
                     new RandomTopicPacket(CurrentContactUID)
                 );
+
+                ActionID++;
             }
         }
 
@@ -300,6 +306,8 @@ namespace ObcyProtoRev.Protocol
                         new StrangerSearchPacket(info, info, "main")
                     );
                 }
+
+                ActionID++;
             }
         }
 
@@ -318,6 +326,8 @@ namespace ObcyProtoRev.Protocol
                 OnMessageSent(
                     new Message(MessageType.Chat, message, null, null)
                 );
+
+                ActionID++;
             }
         }
 

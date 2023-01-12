@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using ObcyProtoRev.Protocol.Client.Identity;
 using ObcyProtoRev.Protocol.SockJs;
 
@@ -31,6 +31,8 @@ namespace ObcyProtoRev.Protocol.Client.Packets
             Data["channel"] = channel;
             Data["myself"] = jObjectMyInfo;
             Data["preferences"] = jObjectPreferencesInfo;
+
+            Data["ceid"] = Connection.ActionID;
         }
     }
 }
