@@ -430,6 +430,7 @@ namespace ObcyProtoRev.Protocol
         protected virtual void OnServerClosedConnection()
         {
             IsOpen = false;
+            IsStrangerConnected = false;
 
             var handler = ServerClosedConnection;
 
@@ -446,6 +447,7 @@ namespace ObcyProtoRev.Protocol
         protected virtual void OnSocketClosed(string reason)
         {
             IsOpen = false;
+            IsStrangerConnected = false;
 
             var handler = SocketClosed;
 
