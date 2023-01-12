@@ -21,10 +21,13 @@ namespace ObcyProtoRev.Protocol
         #region Public fields
         public bool IsReady { get; private set; }
         public bool IsOpen { get; private set; }
+        public bool IsMobile { get; set; }
         public bool IsStrangerConnected { get; private set; }
         public bool KeepAlive { get; set; }
+        public bool SendUserAgent { get; set; }
 
         public string CurrentContactUID { get; private set; }
+        public UserAgent UserAgent { get; set; }
         #endregion
 
         #region Delegates
@@ -66,6 +69,9 @@ namespace ObcyProtoRev.Protocol
 
             KeepAlive = true;
             IsReady = true;
+
+            SendUserAgent = true;
+            UserAgent = new UserAgent("ObcyProtoRev", "0.3.0.0");
         }
         #endregion
 
@@ -348,7 +354,16 @@ namespace ObcyProtoRev.Protocol
         protected virtual void OnConnectionAccepted(string connectionid)
         {
             var handler = ConnectionAccepted;
-            if (handler != null) handler(this, connectionid);
+            
+            if (handler != null) 
+                handler(this, connectionid);
+
+            if (SendUserAgent)
+            {
+                SendPacket(
+                    new ClientInfoPacket(IsMobile, UserAgent)
+                );
+            }
         }
 
         protected virtual void OnMessageReceived(Message message)
