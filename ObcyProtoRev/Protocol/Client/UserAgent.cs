@@ -13,7 +13,7 @@
 
         public override string ToString()
         {
-            return string.Format("{0}, version {1}");
+            return string.Format("{0}, version {1}", Name, Version);
         }
     }
 }
