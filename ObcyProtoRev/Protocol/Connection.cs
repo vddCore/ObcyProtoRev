@@ -454,9 +454,8 @@ namespace ObcyProtoRev.Protocol
 
                 if (packet.Header == PingPacket.ToString())
                 {
-                    // No assertion or special handling needed.
-                    // This packet does not have any data.
-                    // ----------------------------------------
+                    Debug.Assert(packet.Data == null, "PingReceived: packet.Data == null");
+
                     if (KeepAlive)
                         PongResponse();
 
