@@ -324,7 +324,7 @@ namespace ObcyProtoRev.Protocol
         /// </summary>
         /// <param name="json">JSON packet string to be sent.</param>
         /// <remarks>Make sure the packet is WELL formed. Otherwise client will certainly get disconnected.</remarks>
-        public void SendPacket(string json)
+        public void SendJson(string json)
         {
             if (IsReady && IsOpen)
                 WebSocket.Send(json);
