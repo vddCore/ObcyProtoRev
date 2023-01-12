@@ -9,11 +9,9 @@ namespace ObcyProtoRev.Protocol.Client.Packets
         {
             Header = "_cinfo";
 
-            var jObject = new JObject();
-            jObject["mobile"] = isMobile;
-            jObject["cver"] = userAgent.ToString();
-
-            Data = jObject;
+            Data = new JObject();
+            Data["mobile"] = isMobile;
+            Data["cver"] = userAgent.ToString();
         }
     }
 }

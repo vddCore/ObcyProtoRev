@@ -9,8 +9,8 @@ namespace ObcyProtoRev.Protocol.Client.Packets
         {
             Header = "_distalk";
 
-            var jObject = new JObject();
-            jObject["ckey"] = contactGuid;
+            Data = new JObject();
+            Data["ckey"] = contactGuid;
         }
     }
 }
