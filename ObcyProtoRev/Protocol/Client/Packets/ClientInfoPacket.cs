@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using ObcyProtoRev.Protocol.Client.Identity;
 using ObcyProtoRev.Protocol.SockJs;
 
@@ -21,6 +21,8 @@ namespace ObcyProtoRev.Protocol.Client.Packets
             Data = new JObject();
             Data["mobile"] = isMobile;
             Data["cver"] = userAgent.ToString();
+
+            Data["adf"] = "php"; // FIXME: Currently hard-coded, new protocol analysis yielded just this result.
         }
     }
 }
