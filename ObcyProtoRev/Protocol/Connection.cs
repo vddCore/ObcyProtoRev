@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 
 using ObcyProtoRev.Protocol.Client;
+using ObcyProtoRev.Protocol.Client.Identity;
 using ObcyProtoRev.Protocol.Client.Packets;
 using ObcyProtoRev.Protocol.Server.Packets;
 using ObcyProtoRev.Protocol.SockJs;
@@ -20,6 +21,8 @@ namespace ObcyProtoRev.Protocol
         #region Public fields
         public bool IsReady { get; private set; }
         public bool IsOpen { get; private set; }
+        public bool IsStrangerConnected { get; private set; }
+        public bool KeepAlive { get; set; }
 
         public string CurrentContactUID { get; private set; }
         #endregion
@@ -61,6 +64,7 @@ namespace ObcyProtoRev.Protocol
             RegisterPacketHandlerEvents();
             RenewConnectionAddress();
 
+            KeepAlive = true;
             IsReady = true;
         }
         #endregion
@@ -77,6 +81,78 @@ namespace ObcyProtoRev.Protocol
                 WebSocket.Connect();
         }
 
+        public void DisconnectStranger()
+        {
+            if (IsStrangerConnected)
+            {
+                SendPacket(
+                    new DisconnectPacket(CurrentContactUID)
+                );
+            }
+        }
+
+        public void FlagStranger()
+        {
+            if (IsOpen && IsReady)
+            {
+                SendPacket(
+                    new ReportStrangerPacket(CurrentContactUID)
+                );
+            }
+        }
+
+        public void PongResponse()
+        {
+            if (IsOpen && IsReady)
+            {
+                SendPacket(
+                    new PongPacket()
+                );
+            }
+        }
+
+        public void ReportChatstate(bool typing)
+        {
+            if (IsStrangerConnected)
+            {
+                SendPacket(
+                    new ChatstatePacket(typing, CurrentContactUID)
+                );
+            }
+        }
+
+        public void RequestRandomTopic()
+        {
+            if (IsStrangerConnected)
+            {
+                SendPacket(
+                    new RandomTopicPacket(CurrentContactUID)
+                );
+            }
+        }
+
+        public void SearchForStranger(Location location)
+        {
+            if (IsStrangerConnected)
+            {
+                var info = new PersonInfo(0, location);
+
+                SendPacket(
+                    new StrangerSearchPacket(info, info, "main")
+                );
+            }
+        }
+
+        public void SendMessage(string message)
+        {
+            if (IsReady && IsOpen)
+            {
+                SendPacket(
+                    new MessagePacket(message, CurrentContactUID)
+                );
+            }
+        }
+
         public void SendPacket(Packet packet)
         {
             if (IsReady && IsOpen)
@@ -91,16 +167,6 @@ namespace ObcyProtoRev.Protocol
                 WebSocket.Send(json);
 
             OnJsonWrite(json);
-        }
-
-        public void SendMessage(string message)
-        {
-            if (IsReady && IsOpen)
-            {
-                SendPacket(
-                    new MessagePacket(message, CurrentContactUID)
-                );
-            }
         }
 
         #region Private methods
@@ -178,6 +244,9 @@ namespace ObcyProtoRev.Protocol
 
                 if (packet.Header == PingPacket.ToString())
                 {
+                    if (KeepAlive)
+                        PongResponse();
+
                     OnPingReceived(DateTime.Now);
                 }
 
@@ -237,7 +306,7 @@ namespace ObcyProtoRev.Protocol
 
         private void WebsocketPacketHandlerOnSocketHeartbeatReceived(DateTime heartbeatTime)
         {
-
+            OnHeartbeatReceived(heartbeatTime);
         }
 
         private void WebsocketPacketHandlerOnConnectionClosePacketReceived(EventArgs e)
@@ -297,13 +366,21 @@ namespace ObcyProtoRev.Protocol
         protected virtual void OnStrangerFound(ContactInfo contactinfo)
         {
             var handler = StrangerFound;
-            if (handler != null) handler(this, contactinfo);
+
+            if (handler != null)
+                handler(this, contactinfo);
+
+            IsStrangerConnected = true;
         }
 
         protected virtual void OnConversationEnded(DisconnectInfo disconnectInfo)
         {
             var handler = ConversationEnded;
-            if (handler != null) handler(this, disconnectInfo);
+
+            if (handler != null)
+                handler(this, disconnectInfo);
+
+            IsStrangerConnected = false;
         }
 
         protected virtual void OnStrangerChatstateChanged(bool typing)
@@ -339,7 +416,11 @@ namespace ObcyProtoRev.Protocol
         protected virtual void OnServerClosedConnection()
         {
             var handler = ServerClosedConnection;
-            if (handler != null) handler(this, EventArgs.Empty);
+
+            if (handler != null)
+                handler(this, EventArgs.Empty);
+
+            IsOpen = false;
         }
 
         protected virtual void OnHeartbeatReceived(DateTime datetime)
@@ -351,7 +432,11 @@ namespace ObcyProtoRev.Protocol
         protected virtual void OnSocketClosed(string reason)
         {
             var handler = SocketClosed;
-            if (handler != null) handler(this, reason);
+
+            if (handler != null)
+                handler(this, reason);
+
+            IsOpen = false;
         }
 
         protected virtual void OnSocketError(Exception e)
@@ -363,7 +448,11 @@ namespace ObcyProtoRev.Protocol
         protected virtual void OnSocketOpened()
         {
             var handler = SocketOpened;
-            if (handler != null) handler(this, EventArgs.Empty);
+
+            if (handler != null)
+                handler(this, EventArgs.Empty);
+
+            IsOpen = true;
         }
         #endregion
     }
