@@ -54,6 +54,8 @@
     <Compile Include="Protocol\Client\Packets\DisconnectPacket.cs" />
     <Compile Include="Protocol\Client\Packets\MessagePacket.cs" />
     <Compile Include="Protocol\Client\Packets\PongPacket.cs" />
+    <Compile Include="Protocol\Client\Packets\RandomTopicPacket.cs" />
+    <Compile Include="Protocol\Client\Packets\ReconnectRequestPacket.cs" />
     <Compile Include="Protocol\Client\Packets\StrangerSearchPacket.cs" />
     <Compile Include="Protocol\Client\Identity\PersonInfo.cs" />
     <Compile Include="Protocol\Client\UserAgent.cs" />
@@ -66,7 +68,9 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Compile Include="Protocol\Client\Packets\ReportStrangerPacket.cs" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
