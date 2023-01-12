@@ -2,7 +2,7 @@ using Newtonsoft.Json.Linq;
 
 namespace ObcyProtoRev.Protocol.Client
 {
-    public sealed class ContactInfo
+    public sealed class StrangerInfo
     {
 
         public int ClientID { get; private set; }
@@ -11,7 +11,7 @@ namespace ObcyProtoRev.Protocol.Client
 
         public JToken Preferences { get; private set; }
 
-        public ContactInfo(int clientId, string uid, bool flaggedAsUnpleasant, JToken preferences)
+        public StrangerInfo(int clientId, string uid, bool flaggedAsUnpleasant, JToken preferences)
         {
             ClientID = clientId;
             UID = uid;

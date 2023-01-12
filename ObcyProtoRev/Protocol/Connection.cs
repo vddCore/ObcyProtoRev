@@ -4,10 +4,13 @@ using System.Collections.Generic;
 using ObcyProtoRev.Protocol.Client;
 using ObcyProtoRev.Protocol.Client.Identity;
 using ObcyProtoRev.Protocol.Client.Packets;
+using ObcyProtoRev.Protocol.Events;
 using ObcyProtoRev.Protocol.Server.Packets;
 using ObcyProtoRev.Protocol.SockJs;
 
 using WebSocketSharp;
+using ErrorEventArgs = ObcyProtoRev.Protocol.Events.ErrorEventArgs;
+using MessageEventArgs = ObcyProtoRev.Protocol.Events.MessageEventArgs;
 
 namespace ObcyProtoRev.Protocol
 {
@@ -80,98 +83,86 @@ namespace ObcyProtoRev.Protocol
         public static int ActionID { get; set; }
         #endregion
 
-        #region Delegates
-        public delegate void BooleanEventHandler(object sender, bool value);
-        public delegate void ContactInfoEventHandler(object sender, ContactInfo contactInfo);
-        public delegate void ConversationEndEventHandler(object sender, DisconnectInfo disconnectInfo);
-        public delegate void DateTimeEventHandler(object sender, DateTime dateTime);
-        public delegate void ErrorEventHandler(object sender, Exception e);
-        public delegate void IntegerEventHandler(object sender, int count);
-        public delegate void MessageEventHandler(object sender, Message message);
-        public delegate void ObjectEventHandler(object sender, EventArgs e);
-        public delegate void StringEventHandler(object sender, string value);
-        #endregion
-
         #region Event handlers
         /// <summary>
-        /// Event that gets fired after the client receives "ConnectionAccepted" service packet.
+        /// Event that is invoked after the client receives "ConnectionAccepted" service packet.
         /// </summary>
-        public event StringEventHandler ConnectionAccepted;
+        public event EventHandler<ConnectionAcceptedEventArgs> ConnectionAccepted;
 
         /// <summary>
-        /// Event that gets fired after the client receives the meaningful "o" socket packet.
+        /// Event that is invoked after the client receives the "o" socket packet.
         /// </summary>
-        public event ObjectEventHandler ConnectionAcknowledged;
+        public event EventHandler ConnectionAcknowledged;
 
         /// <summary>
-        /// Event that gets fired when a stranger disconnects or client tries to send a packet that requires an active conversation.
+        /// Event that is invoked when a stranger disconnects or client tries to send a packet that requires an active conversation.
         /// </summary>
-        public event ConversationEndEventHandler ConversationEnded;
+        public event EventHandler<ConversationEndedEventArgs> ConversationEnded;
 
         /// <summary>
-        /// Event that gets fired when the client receives the meaningful "h" socket packet.
+        /// Event that is invoked when the client receives the meaningful "h" socket packet.
         /// </summary>
-        public event DateTimeEventHandler HeartbeatReceived;
+        public event EventHandler<HeartbeatEventArgs> HeartbeatReceived;
 
         /// <summary>
-        /// Event that gets fired when any (either service or socket) packet has been received.
+        /// Event that is invoked when any (either service or socket) packet has been received.
         /// </summary>
-        public event StringEventHandler JsonRead;
+        public event EventHandler<JsonEventArgs> JsonRead;
 
         /// <summary>
-        /// Event that gets fired when any (either service or socket) packet has been sent.
+        /// Event that is invoked when any (either service or socket) packet has been sent.
         /// </summary>
-        public event StringEventHandler JsonWritten;
+        public event EventHandler<JsonEventArgs> JsonWrite;
 
         /// <summary>
-        /// Event that gets fired when the client receives a message from the currently connected stranger.
+        /// Event that is invoked when the client receives a message from the currently connected stranger.
         /// </summary>
-        public event MessageEventHandler MessageReceived;
+        public event EventHandler<MessageEventArgs> MessageReceived;
 
         /// <summary>
-        /// Event that gets fired when the client sents a message to the currently connected stranger.
+        /// Event that is invoked when the client sents a message to the currently connected stranger.
         /// </summary>
-        public event MessageEventHandler MessageSent;
+        public event EventHandler<MessageEventArgs> MessageSent;
 
         /// <summary>
-        /// Event that gets fired when client receives "OnlineCount" service packet.
+        /// Event that is invoked when client receives "OnlineCount" service packet.
         /// </summary>
-        public event IntegerEventHandler OnlinePeopleCountChanged;
+        public event EventHandler<OnlineCountEventArgs> OnlinePeopleCountChanged;
 
         /// <summary>
-        /// Event that gets fired when client receives "Ping" service packet.
+        /// Event that is invoked when client receives "Ping" service packet.
         /// </summary>
-        public event DateTimeEventHandler PingReceived;
+        public event EventHandler<PingEventArgs> PingReceived;
 
         /// <summary>
-        /// Event that gets fired when client receives the meaningful "c" socket packet.
+        /// Event that is invoked when client receives the "c" socket packet.
         /// </summary>
-        public event ObjectEventHandler ServerClosedConnection;
+        public event EventHandler ServerClosedConnection;
 
         /// <summary>
-        /// Event that gets fired when socket gets closed.
+        /// Event that is invoked when socket gets closed.
         /// </summary>
-        public event StringEventHandler SocketClosed;
+        public event EventHandler<SocketClosedEventArgs> SocketClosed;
 
         /// <summary>
-        /// Event that gets fired when socket encounters an error.
+        /// Event that is invoked when socket encounters an error.
         /// </summary>
-        public event ErrorEventHandler SocketError;
+        public event EventHandler<ErrorEventArgs> SocketError;
 
         /// <summary>
-        /// Event that gets fired when socket gets opened.
+        /// Event that is invoked when socket gets opened.
         /// </summary>
-        public event ObjectEventHandler SocketOpened;
+        public event EventHandler SocketOpened;
 
         /// <summary>
-        /// Event that gets fired when client receives Chatstate packet, i.e. stranger is or is not typing.
+        /// Event that is invoked when client receives Chatstate packet, i.e. stranger is or is not typing.
         /// </summary>
-        public event BooleanEventHandler StrangerChatstateChanged;
+        public event EventHandler<ChatstateEventArgs> StrangerChatstateChanged;
 
         /// <summary>
-        /// Event that gets fired when client receives "StrangerFound" packet and the conversation has started.
+        /// Event that is invoked when client receives "StrangerFound" packet and the conversation has started.
         /// </summary>
-        public event ContactInfoEventHandler StrangerFound;
+        public event EventHandler<StrangerFoundEventArgs> StrangerFound;
         #endregion
 
         #region Constructor
@@ -223,8 +214,9 @@ namespace ObcyProtoRev.Protocol
                 );
                 IsStrangerConnected = false;
 
-                var di = new DisconnectInfo(false, 0);
-                ConversationEnded?.Invoke(this, di);
+                var di = new DisconnectInfo(false, -2);
+                var eventArgs = new ConversationEndedEventArgs(di);
+                ConversationEnded?.Invoke(this, eventArgs);
 
                 ActionID++;
             }
@@ -306,7 +298,8 @@ namespace ObcyProtoRev.Protocol
             {
                 SendPacket(new MessagePacket(message, CurrentContactUID));
                 
-                MessageSent?.Invoke(this, new Message(message, null, null, MessageType.Chat));
+                var eventArgs = new MessageEventArgs(new Message(message, -1, -1, MessageType.Chat));
+                MessageSent?.Invoke(this, eventArgs);
                 ActionID++;
             }
         }
@@ -320,7 +313,8 @@ namespace ObcyProtoRev.Protocol
             if (IsReady && IsOpen)
                 WebSocket.Send(packet);
 
-            JsonWritten?.Invoke(this, packet);
+            var eventArgs = new JsonEventArgs(packet);
+            JsonWrite?.Invoke(this, eventArgs);
         }
 
         /// <summary>
@@ -333,7 +327,8 @@ namespace ObcyProtoRev.Protocol
             if (IsReady && IsOpen)
                 WebSocket.Send(json);
 
-            JsonWritten?.Invoke(this, json);
+            var eventArgs = new JsonEventArgs(json);
+            JsonWrite?.Invoke(this, eventArgs);
         }
         #endregion
 
@@ -381,12 +376,6 @@ namespace ObcyProtoRev.Protocol
             // -------------------------------------
             foreach (var packet in packets)
             {
-                // Why so many "if" statements out there?
-                // I guess it's because switch becomes spaghetti-code at some point.
-                // You know, I'm not hungry, and you've gotta admit it:
-                // these conditionals are pretty good-looking.
-                // ---------------------------------------------------------------
-
                 if (packet.Header == ConnectionAcceptedPacket.ToString())
                 {
                     if (packet.Data == null)
@@ -394,7 +383,9 @@ namespace ObcyProtoRev.Protocol
 
                     SendPacket(new ClientInfoPacket(false, UserAgent));
                     SendPacket(new OpenAcknowledgedPacket());
-                    ConnectionAccepted?.Invoke(this, packet.Data["conn_id"].ToString());
+
+                    var eventArgs = new ConnectionAcceptedEventArgs(packet.Data["conn_id"].ToString());
+                    ConnectionAccepted?.Invoke(this, eventArgs);
                     continue;
                 }
 
@@ -406,28 +397,36 @@ namespace ObcyProtoRev.Protocol
                     //
                     // Hence, we have to handle it like this.
                     // -----------------------------------------------------------
+                    IsStrangerConnected = false;
                     if (packet.Data != null)
                     {
                         var di = new DisconnectInfo(true, int.Parse(packet.Data.ToString()));
-                        ConversationEnded?.Invoke(this, di);
+                        var eventArgs = new ConversationEndedEventArgs(di);
+
+                        ConversationEnded?.Invoke(this, eventArgs);
                     }
                     else
                     {
-                        var di = new DisconnectInfo(true, 0);
-                        ConversationEnded?.Invoke(this, di);
+                        var di = new DisconnectInfo(true, -1);
+                        var eventArgs = new ConversationEndedEventArgs(di);
+
+                        ConversationEnded?.Invoke(this, eventArgs);
                     }
-                    IsStrangerConnected = false;
                     continue;
                 }
 
                 if (packet.Header == StrangerDisconnectedPacket.ToString())
                 {
+                    IsStrangerConnected = false;
+
                     if (packet.Data == null)
                         throw new Exception("Invalid packet received, packet data is null.");
 
                     var di = new DisconnectInfo(false, int.Parse(packet.Data.ToString()));
-                    ConversationEnded?.Invoke(this, di);
-                    IsStrangerConnected = false;
+                    var eventArgs = new ConversationEndedEventArgs(di);
+
+                    ConversationEnded?.Invoke(this, eventArgs);
+                    continue;
                 }
 
                 if (packet.Header == MessageReceivedPacket.ToString())
@@ -445,7 +444,8 @@ namespace ObcyProtoRev.Protocol
                         postId,
                         MessageType.Chat
                     );
-                    MessageReceived?.Invoke(this, message);
+                    var eventArgs = new MessageEventArgs(message);
+                    MessageReceived?.Invoke(this, eventArgs);
                     continue;
                 }
 
@@ -454,7 +454,14 @@ namespace ObcyProtoRev.Protocol
                     if (packet.Data == null)
                         throw new Exception("Invalid packet received, packet data is null.");
 
-                    OnlinePeopleCountChanged?.Invoke(this, int.Parse(packet.Data.ToString()));
+                    int number;
+                    if (!int.TryParse(packet.Data.ToString(), out number))
+                    {
+                        number = -1;
+                    }
+
+                    var eventArgs = new OnlineCountEventArgs(number);
+                    OnlinePeopleCountChanged?.Invoke(this, eventArgs);
                     continue;
                 }
 
@@ -463,7 +470,8 @@ namespace ObcyProtoRev.Protocol
                     if (KeepAlive)
                         PongResponse();
 
-                    PingReceived?.Invoke(this, DateTime.Now);
+                    var eventArgs = new PingEventArgs(DateTime.Now);
+                    PingReceived?.Invoke(this, eventArgs);
                     continue;
                 }
 
@@ -478,7 +486,8 @@ namespace ObcyProtoRev.Protocol
                         int.Parse(packet.AdditionalFields["post_id"].ToString()),
                         MessageType.Topic
                     );
-                    MessageReceived?.Invoke(this, message);
+                    var eventArgs = new MessageEventArgs(message);
+                    MessageReceived?.Invoke(this, eventArgs);
                     continue;
                 }
 
@@ -487,8 +496,9 @@ namespace ObcyProtoRev.Protocol
                     if (packet.Data == null)
                         throw new Exception("Invalid packet received, packet data is null.");
 
-                    var message = new Message(packet.Data.ToString(), null, null, MessageType.Service);
-                    MessageReceived?.Invoke(this, message);
+                    var message = new Message(packet.Data.ToString(), -1, -1, MessageType.Service);
+                    var eventArgs = new MessageEventArgs(message);
+                    MessageReceived?.Invoke(this, eventArgs);
                     continue;
                 }
 
@@ -497,7 +507,16 @@ namespace ObcyProtoRev.Protocol
                     if (packet.Data == null)
                         throw new Exception("Invalid packet received, packet data is null.");
 
-                    StrangerChatstateChanged?.Invoke(this, bool.Parse(packet.Data.ToString()));
+                    bool writing;
+                    if (!bool.TryParse(packet.Data.ToString(), out writing))
+                    {
+                        writing = false;
+                    }
+
+                    var chatState = writing ? ChatState.Writing : ChatState.Idle;
+                    var eventArgs = new ChatstateEventArgs(chatState);
+
+                    StrangerChatstateChanged?.Invoke(this, eventArgs);
                     continue;
                 }
 
@@ -511,20 +530,23 @@ namespace ObcyProtoRev.Protocol
                     IsSearchingForStranger = false;
                     IsStrangerConnected = true;
 
-                    var ci = new ContactInfo(
+                    var si = new StrangerInfo(
                         int.Parse(packet.Data["cid"].ToString()),
                         packet.Data["ckey"].ToString(),
                         bool.Parse(packet.Data["flaged"].ToString()),
                         packet.Data["info"]
                     );
-                    StrangerFound?.Invoke(this, ci);
+
+                    var eventArgs = new StrangerFoundEventArgs(si);
+                    StrangerFound?.Invoke(this, eventArgs);
                 }
             }
         }
 
         private void WebsocketPacketHandlerOnSocketHeartbeatReceived(DateTime heartbeatTime)
         {
-            HeartbeatReceived?.Invoke(this, heartbeatTime);
+            var eventArgs = new HeartbeatEventArgs(heartbeatTime);
+            HeartbeatReceived?.Invoke(this, eventArgs);
         }
 
         private void WebsocketPacketHandlerOnConnectionClosePacketReceived(EventArgs e)
@@ -548,15 +570,18 @@ namespace ObcyProtoRev.Protocol
             SocketOpened?.Invoke(this, e);
         }
 
-        private void WebSocket_OnMessage(object sender, MessageEventArgs messageEventArgs)
+        private void WebSocket_OnMessage(object sender, WebSocketSharp.MessageEventArgs messageEventArgs)
         {
-            JsonRead?.Invoke(this, messageEventArgs.Data);
+            var eventArgs = new JsonEventArgs(messageEventArgs.Data);
+
+            JsonRead?.Invoke(this, eventArgs);
             WebsocketPacketHandler.HandlePacket(messageEventArgs.Data);
         }
 
-        private void WebSocket_OnError(object sender, ErrorEventArgs e)
+        private void WebSocket_OnError(object sender, WebSocketSharp.ErrorEventArgs e)
         {
-            SocketError?.Invoke(this, e.Exception);
+            var eventArgs = new ErrorEventArgs(e.Message, e.Exception);
+            SocketError?.Invoke(this, eventArgs);
         }
 
         private void WebSocket_OnClose(object sender, CloseEventArgs e)
@@ -564,7 +589,8 @@ namespace ObcyProtoRev.Protocol
             IsOpen = false;
             IsStrangerConnected = false;
 
-            SocketClosed?.Invoke(this, e.Reason);
+            var eventArgs = new SocketClosedEventArgs(e.WasClean, e.Code, e.Reason);
+            SocketClosed?.Invoke(this, eventArgs);
         }
         #endregion
     }
