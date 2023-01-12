@@ -125,6 +125,11 @@ namespace ObcyProtoRev.Protocol
         public event MessageEventHandler MessageReceived;
 
         /// <summary>
+        /// Event that gets fired when the client sents a message to the currently connected stranger.
+        /// </summary>
+        public event MessageEventHandler MessageSent;
+
+        /// <summary>
         /// Event that gets fired when client receives "OnlineCount" service packet.
         /// </summary>
         public event IntegerEventHandler OnlinePeopleCountChanged;
@@ -179,7 +184,7 @@ namespace ObcyProtoRev.Protocol
             IsReady = true;
 
             SendUserAgent = true;
-            UserAgent = new UserAgent("ObcyProtoRev", "0.3.0.0");
+            UserAgent = new UserAgent("ObcyProtoRev", "0.3.1.0");
         }
         #endregion
 
@@ -303,6 +308,10 @@ namespace ObcyProtoRev.Protocol
             {
                 SendPacket(
                     new MessagePacket(message, CurrentContactUID)
+                );
+
+                OnMessageSent(
+                    new Message(MessageType.Chat, message, null, null)
                 );
             }
         }
@@ -563,6 +572,12 @@ namespace ObcyProtoRev.Protocol
         protected virtual void OnMessageReceived(Message message)
         {
             var handler = MessageReceived;
+            if (handler != null) handler(this, message);
+        }
+
+        protected virtual void OnMessageSent(Message message)
+        {
+            var handler = MessageSent;
             if (handler != null) handler(this, message);
         }
 
