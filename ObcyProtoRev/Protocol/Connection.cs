@@ -451,9 +451,6 @@ namespace ObcyProtoRev.Protocol
 
                 if (packet.Header == PingPacket.ToString())
                 {
-                    if (packet.Data == null)
-                        throw new Exception("Invalid packet received, packet data is null.");
-
                     if (KeepAlive)
                         PongResponse();
 
