@@ -13,13 +13,13 @@ namespace ObcyProtoRev.Protocol.Client.Packets
             var jObjectMyInfo = new JObject
             {
                 ["sex"] = myInfo.Sex,
-                ["loc"] = (int) myInfo.Location
+                ["loc"] = (int)myInfo.Location
             };
 
             var jObjectPreferencesInfo = new JObject
             {
                 ["sex"] = preferencesInfo.Sex,
-                ["loc"] = (int) preferencesInfo.Location
+                ["loc"] = (int)preferencesInfo.Location
             };
 
             Data = new JObject
@@ -27,8 +27,8 @@ namespace ObcyProtoRev.Protocol.Client.Packets
                 ["channel"] = channel,
                 ["myself"] = jObjectMyInfo,
                 ["preferences"] = jObjectPreferencesInfo,
-                ["ceid"] = Connection.ActionID
             };
+            base["ceid"] = Connection.ActionID;
         }
     }
 }

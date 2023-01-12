@@ -395,6 +395,7 @@ namespace ObcyProtoRev.Protocol
                     SendPacket(new ClientInfoPacket(false, UserAgent));
                     SendPacket(new OpenAcknowledgedPacket());
                     ConnectionAccepted?.Invoke(this, packet.Data["conn_id"].ToString());
+                    continue;
                 }
 
                 if (packet.Header == ConversationEndedPacket.ToString())
@@ -416,6 +417,7 @@ namespace ObcyProtoRev.Protocol
                         ConversationEnded?.Invoke(this, di);
                     }
                     IsStrangerConnected = false;
+                    continue;
                 }
 
                 if (packet.Header == StrangerDisconnectedPacket.ToString())
@@ -425,6 +427,7 @@ namespace ObcyProtoRev.Protocol
 
                     var di = new DisconnectInfo(false, int.Parse(packet.Data.ToString()));
                     ConversationEnded?.Invoke(this, di);
+                    IsStrangerConnected = false;
                 }
 
                 if (packet.Header == MessageReceivedPacket.ToString())
@@ -432,13 +435,18 @@ namespace ObcyProtoRev.Protocol
                     if (packet.Data == null)
                         throw new Exception("Invalid packet received, packet data is null.");
 
+                    int postId = -1;
+                    if (packet.AdditionalFields.ContainsKey("post_id"))
+                        postId = int.Parse(packet.AdditionalFields["post_id"].ToString());
+
                     var message = new Message(
                         packet.Data["msg"].ToString(),
                         int.Parse(packet.Data["cid"].ToString()),
-                        int.Parse(packet.AdditionalFields["post_id"].ToString()),
+                        postId,
                         MessageType.Chat
                     );
                     MessageReceived?.Invoke(this, message);
+                    continue;
                 }
 
                 if (packet.Header == OnlinePeopleCountPacket.ToString())
@@ -447,6 +455,7 @@ namespace ObcyProtoRev.Protocol
                         throw new Exception("Invalid packet received, packet data is null.");
 
                     OnlinePeopleCountChanged?.Invoke(this, int.Parse(packet.Data.ToString()));
+                    continue;
                 }
 
                 if (packet.Header == PingPacket.ToString())
@@ -455,6 +464,7 @@ namespace ObcyProtoRev.Protocol
                         PongResponse();
 
                     PingReceived?.Invoke(this, DateTime.Now);
+                    continue;
                 }
 
                 if (packet.Header == RandomTopicReceivedPacket.ToString())
@@ -469,6 +479,7 @@ namespace ObcyProtoRev.Protocol
                         MessageType.Topic
                     );
                     MessageReceived?.Invoke(this, message);
+                    continue;
                 }
 
                 if (packet.Header == ServiceMessageReceivedPacket.ToString())
@@ -478,6 +489,7 @@ namespace ObcyProtoRev.Protocol
 
                     var message = new Message(packet.Data.ToString(), null, null, MessageType.Service);
                     MessageReceived?.Invoke(this, message);
+                    continue;
                 }
 
                 if (packet.Header == StrangerChatstatePacket.ToString())
@@ -486,6 +498,7 @@ namespace ObcyProtoRev.Protocol
                         throw new Exception("Invalid packet received, packet data is null.");
 
                     StrangerChatstateChanged?.Invoke(this, bool.Parse(packet.Data.ToString()));
+                    continue;
                 }
 
                 if (packet.Header == StrangerFoundPacket.ToString())

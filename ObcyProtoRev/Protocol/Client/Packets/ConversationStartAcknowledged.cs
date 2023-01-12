@@ -12,8 +12,8 @@ namespace ObcyProtoRev.Protocol.Client.Packets
             Data = new JObject
             {
                 ["ckey"] = strangerUid,
-                ["ceid"] = Connection.ActionID
             };
+            base["ceid"] = Connection.ActionID;
         }
     }
 }

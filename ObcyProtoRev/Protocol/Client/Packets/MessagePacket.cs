@@ -13,8 +13,8 @@ namespace ObcyProtoRev.Protocol.Client.Packets
             {
                 ["ckey"] = strangerUid,
                 ["msg"] = body,
-                ["ceid"] = Connection.ActionID
             };
-        } 
+            base["ceid"] = Connection.ActionID;
+        }
     }
 }

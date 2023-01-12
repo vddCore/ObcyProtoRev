@@ -14,7 +14,7 @@ namespace ObcyProtoRev.Protocol.Client.Packets
             {
                 ["mobile"] = isMobile,
                 ["cver"] = userAgent.ToString(), 
-                ["adf"] = "php" // FIXME: Currently hard-coded, new protocol analysis yielded just this result.
+                ["adf"] = "ajaxPHP" // FIXME: Currently hard-coded, new protocol analysis yielded just this result.
             };
 
         }
