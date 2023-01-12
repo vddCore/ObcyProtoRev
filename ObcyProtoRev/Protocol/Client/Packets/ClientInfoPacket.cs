@@ -4,8 +4,16 @@ using ObcyProtoRev.Protocol.SockJs;
 
 namespace ObcyProtoRev.Protocol.Client.Packets
 {
-    class ClientInfoPacket : Packet
+    /// <summary>
+    /// Represents a client information packet which is ready to be sent as-is. This class cannot be inherited.
+    /// </summary>
+    public sealed class ClientInfoPacket : Packet
     {
+        /// <summary>
+        /// Creates a new instance of ClientInfoPacket class.
+        /// </summary>
+        /// <param name="isMobile">A value indicating whether or not this packet is sent from a mobile device.</param>
+        /// <param name="userAgent">A value describing application's identity.</param>
         public ClientInfoPacket(bool isMobile, UserAgent userAgent)
         {
             Header = "_cinfo";
