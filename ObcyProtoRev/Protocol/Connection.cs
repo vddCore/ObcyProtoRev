@@ -324,7 +324,7 @@ namespace ObcyProtoRev.Protocol
                 );
 
                 OnMessageSent(
-                    new Message(MessageType.Chat, message, null, null)
+                    new Message(message, null, null, MessageType.Chat)
                 );
 
                 ActionID++;
@@ -460,11 +460,11 @@ namespace ObcyProtoRev.Protocol
                     Debug.Assert(packet.Data != null, "MessageReceived: packet.Data != null");
 
                     var message = new Message(
-                        MessageType.Chat,
                         packet.Data["msg"].ToString(),
                         int.Parse(packet.Data["cid"].ToString()),
                         int.Parse(packet.AdditionalFields["post_id"].ToString())
-                    );
+,
+                        MessageType.Chat);
                     OnMessageReceived(message);
                 }
 
@@ -492,11 +492,11 @@ namespace ObcyProtoRev.Protocol
                     Debug.Assert(packet.Data != null, "RandomTopicReceived: packet.Data != null");
 
                     var message = new Message(
-                        MessageType.Topic,
                         packet.Data["topic"].ToString(),
                         int.Parse(packet.Data["cid"].ToString()),
                         int.Parse(packet.AdditionalFields["post_id"].ToString())
-                    );
+,
+                        MessageType.Topic);
                     OnMessageReceived(message);
                 }
 
@@ -504,7 +504,7 @@ namespace ObcyProtoRev.Protocol
                 {
                     Debug.Assert(packet.Data != null, "ServiceMessageReceived: packet.Data != null");
 
-                    var message = new Message(MessageType.Service, packet.Data.ToString(), null, null);
+                    var message = new Message(packet.Data.ToString(), null, null, MessageType.Service);
                     OnMessageReceived(message);
                 }
 
@@ -527,9 +527,9 @@ namespace ObcyProtoRev.Protocol
                         new ContactInfo(
                             int.Parse(packet.Data["cid"].ToString()),
                             packet.Data["ckey"].ToString(),
-                            packet.Data["info"],
                             bool.Parse(packet.Data["flaged"].ToString())
-                        )
+,
+                            packet.Data["info"])
                     );
                 }
             }

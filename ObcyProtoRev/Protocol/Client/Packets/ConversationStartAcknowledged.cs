@@ -5,14 +5,15 @@ namespace ObcyProtoRev.Protocol.Client.Packets
 {
     public class ConversationStartAcknowledged : Packet
     {
-        public ConversationStartAcknowledged(string strangerUID)
+        public ConversationStartAcknowledged(string strangerUid)
         {
             Header = "_begacked";
 
-            Data = new JObject();
-            Data["ckey"] = strangerUID;
-
-            Data["ceid"] = Connection.ActionID;
+            Data = new JObject
+            {
+                ["ckey"] = strangerUid,
+                ["ceid"] = Connection.ActionID
+            };
         }
     }
 }

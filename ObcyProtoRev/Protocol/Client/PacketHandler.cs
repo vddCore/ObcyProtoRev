@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -20,54 +20,30 @@ namespace ObcyProtoRev.Protocol.Client
 
         public static void HandlePacket(string sockJsPacket)
         {
-            PacketType packetType = Decoder.DeterminePacketType(sockJsPacket);
+            var packetType = Decoder.DeterminePacketType(sockJsPacket);
 
             switch (packetType)
             {
                 case PacketType.ConnectionOpen:
-                    OnConnectionOpenPacketReceived();
+                    ConnectionOpenPacketReceived?.Invoke(EventArgs.Empty);
                     break;
                 case PacketType.ConnectionClose:
-                    OnConnectionClosePacketReceived();
+                    ConnectionClosePacketReceived?.Invoke(EventArgs.Empty);
                     break;
                 case PacketType.SocketHeartbeat:
-                    OnSocketHeartbeatReceived(DateTime.Now);
+                    SocketHeartbeatReceived?.Invoke(DateTime.Now);
                     break;
                 case PacketType.SocketMessage:
                     var packets = Decoder.DecodePackets(sockJsPacket);
-                    OnSocketMessageReceived(packets);
+                    SocketMessageReceived?.Invoke(packets);
                     break;
                 case PacketType.BinaryData:
                     Debug.WriteLine("Binary data not supported.");
                     break;
-                case PacketType.Invalid:
+                default: // Includes PacketType.Invalid
                     Debug.WriteLine("Invalid packet received.");
                     break;
             }
-        }
-
-        private static void OnConnectionOpenPacketReceived()
-        {
-            var handler = ConnectionOpenPacketReceived;
-            if (handler != null) handler(EventArgs.Empty);
-        }
-
-        private static void OnConnectionClosePacketReceived()
-        {
-            var handler = ConnectionClosePacketReceived;
-            if (handler != null) handler(EventArgs.Empty);
-        }
-
-        private static void OnSocketHeartbeatReceived(DateTime heartbeatTime)
-        {
-            var handler = SocketHeartbeatReceived;
-            if (handler != null) handler(heartbeatTime);
-        }
-
-        private static void OnSocketMessageReceived(List<Packet> packets)
-        {
-            var handler = SocketMessageReceived;
-            if (handler != null) handler(packets);
         }
     }
 }

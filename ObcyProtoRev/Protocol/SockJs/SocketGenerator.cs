@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -6,11 +7,25 @@ namespace ObcyProtoRev.Protocol.SockJs
 {
     static class SocketGenerator
     {
+        private const int LowPortLimit = 7001;
+        private const int HighPortLimit = 7017;
+
         private static readonly Random Rng = new Random();
+        private static readonly List<int> PortBlacklist = new List<int>
+        {
+            7007,
+            7009
+        };
 
         public static int GeneratePortNumber()
         {
-            return Rng.Next(7001, 7006);
+            var portNumber = Rng.Next(LowPortLimit, HighPortLimit);
+
+            while(PortBlacklist.Contains(portNumber))
+            {
+                portNumber = Rng.Next(LowPortLimit, HighPortLimit);
+            }
+            return portNumber;
         }
 
         public static string GenerateRandomSocketNumber()

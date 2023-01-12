@@ -1,8 +1,5 @@
-﻿namespace ObcyProtoRev.Protocol.Client.Identity
+namespace ObcyProtoRev.Protocol.Client.Identity
 {
-    /// <summary>
-    /// Specifies preferred stranger search locations.
-    /// </summary>
     public enum Location
     {
         WholePoland = 0,

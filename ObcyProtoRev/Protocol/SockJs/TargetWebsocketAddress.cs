@@ -1,21 +1,14 @@
-﻿namespace ObcyProtoRev.Protocol.SockJs
+namespace ObcyProtoRev.Protocol.SockJs
 {
     class TargetWebsocketAddress
     {
-        public int Port { get; private set; }
+        public int Port { get; }
 
-        public string SocketNumber { get; private set; }
-        public string SocketSeed { get; private set; }
+        public string SocketNumber { get; }
+        public string SocketSeed { get; }
 
-        public string Origin
-        {
-            get { return "http://6obcy.in"; }
-        }
-
-        public string SocketIP
-        {
-            get { return "91.185.186.211"; }
-        }
+        public string Origin => "http://6obcy.in";
+        public string SocketIP => "91.185.186.211";
 
         public TargetWebsocketAddress()
         {
@@ -26,13 +19,7 @@
 
         public override string ToString()
         {
-            return string.Format(
-                "ws://{0}:{1}/echoup/{2}/{3}/websocket",
-                SocketIP,
-                Port,
-                SocketNumber,
-                SocketSeed
-            );
+            return $"ws://{SocketIP}:{Port}/echoup/{SocketNumber}/{SocketSeed}/websocket";
         }
 
         public static implicit operator string(TargetWebsocketAddress twa)
